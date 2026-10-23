@@ -25,6 +25,10 @@ dsh --profile web
 
 Ganti `web` dengan nama profil Anda. Review prompt izin dependency/build script dan setujui hanya paket yang Anda percayai.
 
+## Runtime integration smoke test
+
+CI and local package tests do not prove that the plugin works end-to-end inside a live DSH session. Use the [runtime integration smoke-test checklist](docs/integration-smoke-test.md) to verify profile installation, bundle composition, MCP startup/tool calls, Skill discovery, indexing/search, and restart/reconnection. The live DSH checks must be run on an actual DSH installation; do not report them as passed based on CI alone.
+
 ## Helper pengukuran lokal
 
 Dari checkout repository, setiap mode menerima JSON melalui stdin dan menghasilkan JSON:
