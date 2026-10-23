@@ -22,7 +22,7 @@ dsh --version
 pnpm --version
 ```
 
-Check DSH's own runtime requirements as well as this package's `engines` field. The package declares Node.js `>=22.5.0`; follow the active DSH release's documented engine requirement if it is stricter. DSH plugin installation forwards package operations to pnpm, so pnpm must be available.
+The target DSH release declares Node.js `^22.19.0 || >=24.0.0` in its [tagged package metadata](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.2/package.json); this package itself declares `>=22.5.0`. Use the DSH requirement because it is stricter. DSH plugin installation forwards package operations to pnpm, so pnpm must be available.
 
 ## 2. Create a disposable profile
 
@@ -59,7 +59,7 @@ A successful profile boot alone does not prove that every tool or Skill works.
 In the DSH session, ask it to run these checks using the named Context Mode tools. Verify the actual tool results in the trace/UI where available, rather than accepting an unverified narrative.
 
 1. **Doctor (read-only):** call `ctx_doctor` if available; report its original statuses, including warnings and optional capabilities.
-2. **Execution (no file changes):** use `ctx_execute` to print exactly `DSH_CONTEXT_SMOKE_OK`. Do not create, modify, or delete files during this probe.
+2. **Execution (no file changes):** call `ctx_execute` with language `javascript` and code `console.log("DSH_CONTEXT_SMOKE_OK")`. Confirm the returned stdout is exactly `DSH_CONTEXT_SMOKE_OK`. Do not create, modify, or delete files during this probe.
 3. **Index/search (persistent test data):** first create a harmless temporary fixture in Bash:
 
    ```bash
@@ -87,9 +87,9 @@ INFO: shutdown complete
 ```
 
 Ask DSH to:
-- use `ctx-compact` to reduce repetition while preserving the error, file path, expected status, and actual status;
-- use `ctx-quality` to audit those four required facts against the original source;
-- use `ctx-recover` if any required fact is missing, then repeat the quality audit.
+- invoke the registered Skill `dsh-ctx-compact` to reduce repetition while preserving the error, file path, expected status, and actual status;
+- invoke `dsh-ctx-quality` to audit those four required facts against the original source;
+- invoke `dsh-ctx-recover` if any required fact is missing, then repeat the quality audit. The registered names use the `dsh-` prefix; the corresponding source directories are `skills/ctx-compact/`, `skills/ctx-quality/`, and `skills/ctx-recover/`.
 
 **PASS when:** the Skills are discoverable/usable, exact evidence is retained or recovered from the supplied source, and the final audit status is reported honestly. A quality-audit pass checks evidence retention only; it does not prove the final diagnosis is correct.
 
