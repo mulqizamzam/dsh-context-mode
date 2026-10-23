@@ -1,7 +1,7 @@
 {
   "name": "dsh-context-mode",
-  "version": "0.2.0",
-  "description": "Quality-first context engineering for DeepSeek Harness: compact large outputs, audit critical-fact retention, and recover missing evidence.",
+  "version": "0.3.0",
+  "description": "Adaptive context budgeting and quality-first context engineering for DeepSeek Harness: compact, audit, and recover critical evidence.",
   "type": "module",
   "main": "./index.mjs",
   "exports": {
@@ -68,7 +68,8 @@
     "code-execution",
     "context-quality",
     "quality-gate",
-    "context-compaction"
+    "context-compaction",
+    "adaptive-context-budget"
   ],
   "icon": "./icon.svg",
   "bin": {
