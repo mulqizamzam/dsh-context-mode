@@ -1,6 +1,6 @@
 # dsh-context-mode
 
-**Context Mode untuk DeepSeek Harness (DSH), dengan penghematan konteks yang mengutamakan kualitas.**
+**Panduan pemula: Context Mode untuk DeepSeek Harness (DSH), dengan penghematan konteks yang mengutamakan kualitas.**
 
 Paket versi `0.2.0` menghubungkan DSH `0.2.1-rc.2` dengan runtime MCP upstream [`mksglu/context-mode`](https://github.com/mksglu/context-mode) versi `1.0.169`. Ini port independen, bukan produk resmi DeepSeek. Integrasi runtime end-to-end tetap perlu diverifikasi pada instalasi DSH yang sebenarnya.
 
