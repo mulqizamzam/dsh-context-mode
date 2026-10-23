@@ -15,7 +15,7 @@ Ini adalah workflow Skills yang menggunakan tool Context Mode upstream yang ters
 ## Prasyarat dan instalasi
 
 - DSH `0.2.1-rc.2`
-- Node.js yang memenuhi versi engine DSH; untuk DSH `0.2.1-rc.2`, gunakan Node.js `^22.19.0` atau `>=24.0.0` sesuai [panduan CLI DSH](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cli-help.md). Paket ini sendiri mendeklarasikan `>=22.5.0`.
+- Node.js yang memenuhi versi engine DSH; untuk DSH `0.2.1-rc.2`, gunakan Node.js `^22.19.0` atau `>=24.0.0` sesuai [metadata resmi DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.2/package.json). Paket ini sendiri mendeklarasikan `>=22.5.0`.
 - Akses package registry pada instalasi pertama
 
 ```bash
