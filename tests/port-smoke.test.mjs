@@ -13,12 +13,13 @@ test("targets the requested DSH prerelease and pins upstream runtime", async () 
   assert.equal(pkg.dsh.bundle.patch, "./cordis.patch.yml");
 });
 
-test("mounts the upstream MCP server through DSH's native client", async () => {
+test("mounts the upstream MCP server using bundle-relative module resolution", async () => {
   const patch = await readFile(join(root, "cordis.patch.yml"), "utf8");
   assert.match(patch, /@deepseek-ai\/dsh-mcp-client/);
   assert.match(patch, /@deepseek-ai\/dsh-skill-filesystem/);
-  assert.match(patch, /require\.resolve\('context-mode\/cli'\)/);
-  assert.doesNotMatch(patch, /require\.resolve\('context-mode\/package\.json'\).*cli\.bundle/i);
+  assert.match(patch, /createRequire\(baseUrl\)\.resolve\('context-mode\/cli'\)/);
+  assert.match(patch, /createRequire\(baseUrl\)\.resolve\('dsh-context-mode\/package\.json'\)/);
+  assert.doesNotMatch(patch, /\brequire\.resolve\(/);
   assert.doesNotMatch(patch, /npx\s+-y|curl\s+https?:|eval\(/i);
 });
 

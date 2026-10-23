@@ -15,7 +15,8 @@ assert.equal(pkg.dependencies["context-mode"], "1.0.169");
 assert.equal(pkg.dsh.bundle.patch, "./cordis.patch.yml");
 assert.match(patch, /@deepseek-ai\/dsh-mcp-client/);
 assert.match(patch, /@deepseek-ai\/dsh-skill-filesystem/);
-assert.match(patch, /require\.resolve\('context-mode\/cli'\)/);
+assert.match(patch, /createRequire\(baseUrl\)\.resolve\('context-mode\/cli'\)/);
+assert.doesNotMatch(patch, /\brequire\.resolve\(/);
 assert.match(readme, /mulqizamzam\/dsh-context-mode/);
 
 const skillsRoot = resolve(root, "skills");

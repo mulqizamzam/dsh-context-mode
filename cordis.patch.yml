@@ -7,8 +7,8 @@
         transport: stdio
         command: node
         args:
-          # "context-mode/cli" is an exported subpath in context-mode@1.0.169.
-          - !!js "require.resolve('context-mode/cli')"
+          # Resolve from the bundle's own installation directory, not the user's cwd.
+          - !!js "process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('context-mode/cli')"
         cwd: !!js "process.cwd()"
         env:
           CONTEXT_MODE_PLATFORM: dsh
@@ -21,5 +21,5 @@
         providerName: dsh-context-mode
         includeDefaultRoots: false
         customSkillDirs:
-          - !!js "require('node:path').join(require.resolve('dsh-context-mode/package.json'), '..', 'skills')"
+          - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-context-mode/package.json')), 'skills')"
         watch: true
