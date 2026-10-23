@@ -18,6 +18,21 @@ Supported inputs:
 - `changedFiles`, `failedTests`, `stackFrames`: non-negative integer counts gathered from actual evidence; leave them at zero when unknown.
 - `complexityHint`: optional `auto`, `low`, `medium`, or `high` hint.
 
+Use `adaptive-compact` to execute the fail-safe MVP flow on the supplied source:
+
+```bash
+printf '%s' '{"task":"Investigate the root cause of a cross-file regression","source":"ERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"]}' | node scripts/context-quality.mjs adaptive-compact
+```
+
+It recommends a tier, applies tier-specific line-selection settings, audits the result, tries source-grounded recovery if needed, and returns the original source if the final audit still fails. The command never reads or modifies files automatically.
+
+### Result statuses
+
+- `compacted`: the initial compacted text passed the deterministic evidence audit.
+- `compacted-with-recovery`: the initial audit failed, but targeted excerpts restored a passing audit.
+- `held-no-source`, `held-no-audit-basis`, or `held-unverified-required-facts`: compaction was not attempted; the original supplied text is returned.
+- `fallback-full-source`: compaction and recovery could not satisfy the audit, so the complete supplied source is returned.
+
 ## Budget tiers and score
 
 | Tier | Target budget | Score |
