@@ -62,6 +62,30 @@ test("benchmark reports adaptive budget tiers and fails closed without an audit 
   assert.equal(unscoped.adaptiveBudget.compactionCanProceedToAudit, false);
 });
 
+test("adaptive compaction benchmark safely holds unscoped input and audits completed compactions", () => {
+  const report = runContextBenchmark();
+  const counts = report.summary;
+  assert.equal(
+    counts.adaptiveCompactionsCompleted +
+      counts.adaptiveCompactionsHeld +
+      counts.adaptiveCompactionsFellBackToFullSource,
+    counts.cases,
+  );
+
+  const unscoped = report.results.find((result) => result.id === "no-audit-basis");
+  assert.equal(unscoped.adaptiveCompaction.status, "held-no-audit-basis");
+  assert.equal(unscoped.adaptiveCompaction.returnedFullSource, true);
+
+  for (const item of report.results) {
+    if (item.adaptiveCompaction.status === "compacted" || item.adaptiveCompaction.status === "compacted-with-recovery") {
+      assert.equal(item.adaptiveCompaction.finalQualityGatePassed, true, item.id);
+    }
+    if (item.adaptiveCompaction.status === "fallback-full-source") {
+      assert.equal(item.adaptiveCompaction.returnedFullSource, true, item.id);
+    }
+  }
+});
+
 test("benchmark CLI emits valid JSON and exits successfully for expected outcomes", () => {
   const run = spawnSync(process.execPath, [join(root, "scripts/context-benchmark.mjs"), "--json"], {
     encoding: "utf8",
