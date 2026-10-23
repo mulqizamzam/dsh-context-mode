@@ -55,7 +55,7 @@ npm run benchmark
 npm run benchmark:json
 ```
 
-Laporan mencakup reduksi karakter/token *estimasi*, pass/fail quality gate, savings yang hanya dihitung ketika audit compact lulus, dan apakah recovery terarah memperbaiki kasus gagal. Kasus fakta unik yang hilang dan kasus tanpa dasar audit sengaja disertakan sebagai kontrol negatif.
+Laporan mencakup reduksi karakter/token *estimasi*, pass/fail quality gate, savings yang hanya dihitung ketika audit compact lulus, dan apakah recovery terarah memperbaiki kasus gagal. Lihat [baseline CI](benchmarks/BASELINE.md) untuk angka dari fixture sintetis versi benchmark saat ini. Kasus fakta unik yang hilang dan kasus tanpa dasar audit sengaja disertakan sebagai kontrol negatif.
 
 **Batas penting:** benchmark ini tidak memanggil LLM, tidak menilai kebenaran semantik jawaban, dan tidak menghitung token memakai tokenizer model. Ia mengukur apakah fakta/evidence yang dinyatakan wajib masih ada dalam keluaran kompak. Hasil sintetis ini adalah benchmark retensi awal; bukan bukti bahwa akurasi tugas nyata tidak turun. Perbandingan kualitas jawaban model memerlukan evaluasi terpisah dan tidak termasuk dalam benchmark ini.
 
