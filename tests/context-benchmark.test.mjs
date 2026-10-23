@@ -48,6 +48,20 @@ test("benchmark credits savings only when the compact-context audit passes", () 
   assert.ok(report.summary.meanQualityAdjustedSavingsPercentEstimate < report.summary.meanRawCharacterReductionPercentEstimate);
 });
 
+test("benchmark reports adaptive budget tiers and fails closed without an audit basis", () => {
+  const report = runContextBenchmark();
+  const counts = report.summary.adaptiveBudgetTierCounts;
+  assert.equal(counts.small + counts.medium + counts.large, report.summary.cases);
+  assert.equal(
+    report.summary.budgetCasesReadyForQualityAudit + report.summary.budgetCasesHeldForInsufficientEvidence,
+    report.summary.cases,
+  );
+  const unscoped = report.results.find((result) => result.id === "no-audit-basis");
+  assert.equal(unscoped.adaptiveBudget.tier.length > 0, true);
+  assert.equal(unscoped.adaptiveBudget.qualityGateStatus, "insufficient-checks");
+  assert.equal(unscoped.adaptiveBudget.compactionCanProceedToAudit, false);
+});
+
 test("benchmark CLI emits valid JSON and exits successfully for expected outcomes", () => {
   const run = spawnSync(process.execPath, [join(root, "scripts/context-benchmark.mjs"), "--json"], {
     encoding: "utf8",
@@ -57,4 +71,6 @@ test("benchmark CLI emits valid JSON and exits successfully for expected outcome
   assert.equal(report.benchmarkVersion, "1.0.0");
   assert.equal(report.summary.expectedOutcomesMet, report.summary.cases);
   assert.match(report.scope, /does not call an LLM/);
+  assert.ok(report.summary.adaptiveBudgetTierCounts);
+  assert.match(run.stdout, /Adaptive budget tiers/);
 });
