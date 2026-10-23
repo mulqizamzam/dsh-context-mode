@@ -15,7 +15,7 @@ Ini adalah workflow Skills yang menggunakan tool Context Mode upstream yang ters
 ## Prasyarat dan instalasi
 
 - DSH `0.2.1-rc.2`
-- Node.js `22.5+`
+- Node.js yang memenuhi versi engine DSH; untuk DSH `0.2.1-rc.2`, gunakan Node.js `^22.19.0` atau `>=24.0.0` sesuai [metadata resmi DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.2/package.json). Paket ini sendiri mendeklarasikan `>=22.5.0`.
 - Akses package registry pada instalasi pertama
 
 ```bash
@@ -24,6 +24,10 @@ dsh --profile web
 ```
 
 Ganti `web` dengan nama profil Anda. Review prompt izin dependency/build script dan setujui hanya paket yang Anda percayai.
+
+## Runtime integration smoke test
+
+CI and local package tests do not prove that the plugin works end-to-end inside a live DSH session. Use the [runtime integration smoke-test checklist](docs/integration-smoke-test.md) to verify profile installation, bundle composition, MCP startup/tool calls, Skill discovery, indexing/search, and restart/reconnection. The live DSH checks must be run on an actual DSH installation; do not report them as passed based on CI alone.
 
 ## Helper pengukuran lokal
 
