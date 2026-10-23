@@ -2,8 +2,8 @@
 import { compactText, assessQuality, recoverContext, recommendContextBudget } from "../lib/context-quality.mjs";
 
 const mode = process.argv[2];
-if (!["compact", "quality", "recover"].includes(mode)) {
-  process.stderr.write("Usage: node scripts/context-quality.mjs <compact|quality|recover> < request.json\n");
+if (!["compact", "quality", "recover", "budget"].includes(mode)) {
+  process.stderr.write("Usage: node scripts/context-quality.mjs <compact|quality|recover|budget> < request.json\n");
   process.exit(2);
 }
 
