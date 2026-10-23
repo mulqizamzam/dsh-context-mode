@@ -1,0 +1,24 @@
+# DSH Context Mode runtime, exposed through DSH's native MCP client.
+- insert:
+    - id: dsh-context-mode-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: context_mode
+        transport: stdio
+        command: node
+        args:
+          - !!js "require('node:path').join(require.resolve('context-mode/package.json'), '..', 'cli.bundle.mjs')"
+        cwd: !!js "process.cwd()"
+        env:
+          CONTEXT_MODE_PLATFORM: dsh
+        toolCallTimeoutMs: 60000
+        failOnStartupError: false
+
+    - id: dsh-context-mode-skills
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: dsh-context-mode
+        includeDefaultRoots: false
+        customSkillDirs:
+          - !!js "require('node:path').join(require.resolve('dsh-context-mode/package.json'), '..', 'skills')"
+        watch: true
