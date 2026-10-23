@@ -1,19 +1,75 @@
 {
-  "name":"dsh-context-mode","version":"0.1.0",
-  "description":"DeepSeek Harness bundle for Context Mode: sandboxed execution, compact tool results, persistent indexing and search.",
-  "type":"module","main":"./index.mjs",
-  "exports":{".":"./index.mjs","./package.json":"./package.json","./cordis.patch.yml":"./cordis.patch.yml"},
-  "files":["index.mjs","cordis.patch.yml","icon.svg","skills/","README.md","NOTICE.md","LICENSE"],
-  "dsh":{"bundle":{"patch":"./cordis.patch.yml"}},
-  "engines":{"node":">=22.5.0","dsh":"0.2.1-rc.2"},
-  "dependencies":{"context-mode":"1.0.169"},
-  "peerDependencies":{"@deepseek-ai/dsh-mcp-client":"0.2.1-rc.2","@deepseek-ai/dsh-skill-filesystem":"0.2.1-rc.2"},
-  "devDependencies":{"@deepseek-ai/dsh-mcp-client":"0.2.1-rc.2","@deepseek-ai/dsh-skill-filesystem":"0.2.1-rc.2"},
-  "scripts":{"check":"node --check index.mjs && node scripts/verify.mjs","test":"node --test tests/*.test.mjs","prepack":"npm run check && npm test"},
-  "license":"Elastic-2.0",
-  "repository":{"type":"git","url":"https://github.com/mulqizamzam/dsh-context-mode.git"},
-  "homepage":"https://github.com/mulqizamzam/dsh-context-mode#readme",
-  "bugs":{"url":"https://github.com/mulqizamzam/dsh-context-mode/issues"},
-  "keywords":["deepseek-harness","dsh-plugin","context-mode","mcp","sandbox","fts5","context-window","code-execution"],
-  "icon":"./icon.svg"
+  "name": "dsh-context-mode",
+  "version": "0.2.0",
+  "description": "Quality-first context engineering for DeepSeek Harness: compact large outputs, audit critical-fact retention, and recover missing evidence.",
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./quality": "./lib/context-quality.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "cordis.patch.yml",
+    "icon.svg",
+    "skills/",
+    "lib/",
+    "scripts/context-quality.mjs",
+    "README.md",
+    "NOTICE.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=22.5.0",
+    "dsh": "0.2.1-rc.2"
+  },
+  "dependencies": {
+    "context-mode": "1.0.169"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2"
+  },
+  "scripts": {
+    "check": "node --check index.mjs && node scripts/verify.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "prepack": "npm run check && npm test"
+  },
+  "license": "Elastic-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mulqizamzam/dsh-context-mode.git"
+  },
+  "homepage": "https://github.com/mulqizamzam/dsh-context-mode#readme",
+  "bugs": {
+    "url": "https://github.com/mulqizamzam/dsh-context-mode/issues"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "context-mode",
+    "mcp",
+    "sandbox",
+    "fts5",
+    "context-window",
+    "code-execution",
+    "context-quality",
+    "quality-gate",
+    "context-compaction"
+  ],
+  "icon": "./icon.svg",
+  "bin": {
+    "dsh-context-quality": "./scripts/context-quality.mjs"
+  }
 }

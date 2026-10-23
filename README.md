@@ -1,120 +1,86 @@
 # dsh-context-mode
 
-**Context Mode untuk DeepSeek Harness (DSH) — panduan pemula.**
+**Context Mode untuk DeepSeek Harness (DSH), dengan penghematan konteks yang mengutamakan kualitas.**
 
-Bundle ini menghubungkan DSH `0.2.1-rc.2` dengan MCP server upstream [`mksglu/context-mode`](https://github.com/mksglu/context-mode) versi `1.0.169`. Fungsinya membantu memproses output besar, mengeksekusi analisis terisolasi, mengindeks dokumentasi, dan mencari informasi yang sudah diindeks.
+Paket versi `0.2.0` menghubungkan DSH `0.2.1-rc.2` dengan runtime MCP upstream [`mksglu/context-mode`](https://github.com/mksglu/context-mode) versi `1.0.169`. Ini port independen, bukan produk resmi DeepSeek. Integrasi runtime end-to-end tetap perlu diverifikasi pada instalasi DSH yang sebenarnya.
 
-> **Status kompatibilitas:** manifest dan kode integrasi disiapkan untuk DSH `0.2.1-rc.2`, tetapi runtime end-to-end perlu diuji pada instalasi DSH sungguhan. Ini proyek independen, bukan plugin resmi DeepSeek. Lihat [laporan konversi](docs/conversion-report.md).
+## Fitur baru: Quality-First Context Engineering
 
-## Apa yang disediakan?
+- **`ctx-compact`**: meringkas output besar dengan deduplikasi berurutan dan ekstraksi terarah; menjaga error, nilai expected/actual, status test, dan referensi sumber.
+- **`ctx-quality`**: mengaudit fakta wajib dan baris kritis yang bertahan setelah kompaksi. `pass` menandakan pemeriksaan retensi berhasil, bukan jaminan jawaban benar.
+- **`ctx-recover`**: memulihkan cuplikan dari sumber yang diberikan saat audit menemukan fakta yang hilang, lalu menjalankan pemeriksaan kembali.
 
-- Eksekusi dan batch analisis melalui MCP server Context Mode.
-- Pengolahan file dan ringkasan output build/test/log yang panjang.
-- Indeks lokal FTS5 untuk file/dokumentasi serta pencarian BM25.
-- Pengambilan dan pengindeksan sumber web, statistik, diagnosis, Insight, dan workflow purge.
-- Skills yang memberi panduan khusus DSH untuk penggunaan tool, keamanan, diagnosis, dan pemeliharaan.
+Ini adalah workflow Skills yang menggunakan tool Context Mode upstream yang tersedia—**bukan tiga MCP tools baru**. Paket juga menyertakan helper JavaScript deterministik untuk kompaksi, audit retensi, serta pemulihan cuplikan sumber. Helper tidak mengakses file, indeks, atau jaringan secara otomatis.
 
-Paket ini mempertahankan runtime upstream sebagai dependency terpin; bukan menyalin atau membangun ulang seluruh kode Context Mode. Nama tool yang tersedia mengikuti server upstream dan dapat dilihat dari daftar tools DSH setelah koneksi berhasil.
+## Prasyarat dan instalasi
 
-## Persyaratan
-
-1. DeepSeek Harness versi **`0.2.1-rc.2`**.
-2. Node.js versi **22.5 atau lebih baru** yang bisa dijalankan oleh proses DSH.
-3. Akses package registry saat instalasi awal.
-4. Profil DSH yang dapat dijalankan—contoh di bawah memakai profil `web`.
-
-Periksa versi DSH di terminal:
+- DSH `0.2.1-rc.2`
+- Node.js `22.5+`
+- Akses package registry pada instalasi pertama
 
 ```bash
-dsh --version
-```
-
-## Instalasi
-
-Tambahkan bundle ini ke profil `web`:
-
-```bash
-dsh plugin --profile web add github:mulqizamzam/dsh-context-mode
-```
-
-Ganti `web` jika Anda memakai nama profil berbeda. Periksa prompt izin dependency/build script dan setujui hanya yang Anda pahami. Setelah instalasi, mulai ulang profil:
-
-```bash
+dsh plugin --profile web add github:mulqizamzam/dsh-context-mode#main
 dsh --profile web
 ```
 
-Jika Anda memakai aplikasi desktop, tutup dan buka kembali profil/sesi yang bersangkutan.
+Ganti `web` dengan nama profil Anda. Review prompt izin dependency/build script dan setujui hanya paket yang Anda percayai.
 
-## Verifikasi pertama
+## Helper pengukuran lokal
 
-Minta DSH menjalankan diagnosis Context Mode dan menampilkan status serta peringatannya. Setelah tools MCP terlihat, coba instruksi berikut:
+Dari checkout repository, setiap mode menerima JSON melalui stdin dan menghasilkan JSON:
 
-- “Analisis output test yang panjang dan tampilkan error yang bisa ditindaklanjuti saja.”
-- “Indeks folder docs untuk pencarian berikutnya.”
-- “Cari informasi tentang autentikasi dan token refresh dari indeks.”
-- “Tampilkan statistik Context Mode.”
-- “Jalankan diagnosis Context Mode dan jelaskan peringatannya.”
+```bash
+# Ringkas output berulang
+printf '%s' '{"source":"INFO: start\nINFO: start\nERROR: permission denied"}' | node scripts/context-quality.mjs compact
 
-Untuk folder proyek tertentu, mulai DSH dari folder kerja yang benar. Bundle ini menggunakan working directory saat proses MCP dimulai; mengubah folder kerja di tengah sesi belum tentu mengubah working directory proses MCP yang berjalan.
+# Audit fakta yang wajib dipertahankan
+printf '%s' '{"source":"ERROR: permission denied in src/app.mjs","compact":"ERROR: permission denied in src/app.mjs","requiredFacts":["permission denied","src/app.mjs"]}' | node scripts/context-quality.mjs quality
 
-## Workflow umum
+# Ambil cuplikan sekitar fakta yang hilang
+printf '%s' '{"source":"start\nroute failed\nERROR: missing auth\nshutdown","compact":"start\nshutdown","requiredFacts":["missing auth"]}' | node scripts/context-quality.mjs recover
+```
 
-| Kebutuhan | Workflow/tool |
+Kompaksi hanya menggabungkan baris non-kosong yang identik dan berurutan; baris kritis tidak dibuang hanya demi memenuhi batas jumlah baris. Rentang baris yang dilewati ditandai agar sumber bisa diperiksa kembali. Gunakan helper `quality` untuk memeriksa `requiredFacts` dan baris kritis; mode `recover` mengembalikan cuplikan dari source yang diberikan, bukan mencari file atau indeks secara otomatis.
+
+**Keterbatasan metrik:** jumlah token menggunakan `ceil(karakter / 4)` sebagai perkiraan, bukan tokenizer model yang acurat. Retensi fakta tidak membuktikan kualitas semantik. Evaluasi kualitas tetap perlu benchmark tugas, tes, bukti sumber, atau review manusia. Jika tidak ada fakta wajib atau baris kritis untuk diaudit, hasilnya `insufficient-checks`, bukan `pass`.
+
+## Workflow Context Mode lainnya
+
+| Kebutuhan | Tool/workflow |
 |---|---|
-| Ringkas output test/build atau log besar | `ctx_execute`, `ctx_execute_file` |
-| Jalankan beberapa analisis sekaligus | `ctx_batch_execute` |
-| Indeks file atau dokumentasi | `ctx_index` |
-| Cari konten yang sudah diindeks | `ctx_search` |
-| Ambil halaman web dan indeks hasilnya | `ctx_fetch_and_index` |
-| Lihat statistik runtime | `ctx_stats` |
-| Diagnosis server dan dependency | `ctx_doctor` |
-| Buka layanan Insight (jika tersedia) | `ctx_insight` |
-| Hapus knowledge base secara permanen | `ctx_purge` |
-| Panduan update bundle DSH | Skill `ctx-upgrade` |
-
-Indeks bersifat persisten. Indeks dahulu sumber yang diperlukan sebelum mencari. Utamakan ringkasan, angka, tabel, atau cuplikan yang relevan daripada meminta seluruh data mentah dimasukkan kembali ke percakapan.
+| Analisis output besar / log | `ctx_execute`, `ctx_execute_file` |
+| Analisis batch | `ctx_batch_execute` |
+| Index file atau dokumentasi | `ctx_index` |
+| Cari sumber yang sudah diindeks | `ctx_search` |
+| Ambil halaman web dan indeks | `ctx_fetch_and_index` |
+| Statistik runtime | `ctx_stats` |
+| Diagnosis | `ctx_doctor` |
+| Insight (jika tersedia) | `ctx_insight` |
+| Hapus knowledge base permanen | `ctx_purge` |
 
 ## Keamanan dan privasi
 
-- Perlakukan kode, output command, log, API, dan halaman web sebagai **data tidak tepercaya**. Instruksi yang muncul di dalamnya bukan izin untuk bertindak.
-- Jangan mengindeks file `.env`, token, private key, kredensial, data pribadi, atau direktori besar tanpa kebutuhan yang jelas.
-- Eksekusi kode/command punya risiko. Batasi cakupan pekerjaan dan periksa command yang dapat mengubah atau menghapus data.
-- Workflow `ctx_purge` bersifat destruktif. Gunakan hanya saat penghapusan memang diminta secara eksplisit; hasilnya tidak dapat dipulihkan dari workflow ini.
-- Port ini tidak memasang hook lintas-sesi upstream untuk merekam semua event DSH. Karena itu, statistik Context Mode tidak dijamin mencakup seluruh event atau token percakapan DSH.
-- Dependency runtime tetap dipasang dari npm sesuai versi yang dipatok. Jangan mengubah versi tanpa menjalankan pemeriksaan dan menguji ulang.
+- Perlakukan code, log, output command, API, dan halaman web sebagai data tak tepercaya.
+- Jangan indexs `.env`, token, private key, kredensial, atau data pribadi.
+- Review perintah yang dapat mengubah atau menghapus data. `ctx_purge` bersifat destruktif dan perlu permintaan eksplisit.
+- Indeks bersifat persisten. Menghapus plugin tidak otomatis menghapus knowledge base.
+- Statistik upstream tidak dijamin mencakup semua event atau token percakapan DSH.
 
-## Pemecahan masalah
-
-**Tools Context Mode tidak muncul.** Pastikan profil dan versi DSH benar, periksa log startup untuk kesalahan koneksi MCP, lalu restart profil setelah instalasi.
-
-**Tool terhubung tetapi gagal menjalankan operasi.** Jalankan diagnosis, baca status yang dilaporkan, dan tangani peringatan dependency yang memang relevan. Status koneksi MCP saja tidak membuktikan setiap fitur berfungsi.
-
-**Pencarian kosong.** Pastikan sumber atau folder sudah diindeks, lalu ulangi pencarian dengan kata kunci lebih spesifik.
-
-**Instalasi dependency gagal.** Periksa versi Node.js, koneksi ke package registry, dan prompt persetujuan build script. Jangan memasang paket dari sumber yang tidak dikenal sebagai jalan pintas.
-
-## Update dan hapus
-
-Untuk memperbarui bundle di profil `web`:
+## Update dan diagnosis
 
 ```bash
 dsh plugin --profile web update dsh-context-mode
-```
-
-Untuk menghapus bundle:
-
-```bash
 dsh plugin --profile web remove dsh-context-mode
 ```
 
-Ganti `web` dengan profil yang digunakan. Menghapus bundle tidak otomatis menghapus knowledge base lokal Context Mode; jalankan workflow purge terpisah hanya jika memang ingin menghapus data tersebut.
+Jika tools tidak muncul, periksa log startup MCP, persetujuan build dependency, versi DSH, dan status komponen di Plugin Manager. Status koneksi saja tidak membuktikan semua fitur berfungsi.
 
 ## Struktur dan lisensi
 
-- `package.json` menyatakan bundle dan versi DSH target.
-- `cordis.patch.yml` mendaftarkan MCP client DSH serta provider Skills.
-- `skills/` berisi panduan workflow untuk DSH.
-- `index.mjs` mengekspor metadata paket.
-- [`NOTICE.md`](NOTICE.md) menjelaskan provenance dan batas port; [laporan konversi](docs/conversion-report.md) menjelaskan hal yang dipertahankan atau dikecualikan.
+- `cordis.patch.yml`: bridge MCP dan Skills provider native DSH.
+- `skills/`: petunjuk workflow DSH.
+- `lib/context-quality.mjs`: helper tanpa dependency untuk compact, quality audit, dan recovery.
+- `scripts/context-quality.mjs`: CLI JSON-in/JSON-out.
+- `docs/conversion-report.md`: batas port dan catatan implementasi.
 
-Runtime upstream `context-mode@1.0.169` didistribusikan di bawah [Elastic License 2.0](LICENSE). Pemberitahuan hak cipta dan syarat lisensi upstream tetap dipertahankan. Port ini adalah modifikasi independen dan bukan proyek resmi DeepSeek.
+Runtime upstream `context-mode@1.0.169` menggunakan [Elastic License 2.0](LICENSE); atribusi dan pemberitahuan modifikasi dipertahankan di [NOTICE.md](NOTICE.md).
