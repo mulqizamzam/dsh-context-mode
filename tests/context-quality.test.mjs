@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { compactText, assessQuality, recoverContext, estimateTokens } from "../lib/context-quality.mjs";
+import { compactText, assessQuality, recoverContext, estimateTokens, recommendContextBudget, adaptiveCompactText } from "../lib/context-quality.mjs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -71,6 +71,134 @@ test("recovery flags facts that cannot be found in the supplied source", () => {
   const result = recoverContext({ source: "old config has no matching key", compact: "short", requiredFacts: ["newSecretSetting"] });
   assert.deepEqual(result.unresolvedFacts, ["newSecretSetting"]);
   assert.equal(result.requiresFullSourceFallback, true);
+});
+
+test("adaptive budget recommends a small tier but blocks compaction without an audit basis", () => {
+  const result = recommendContextBudget({
+    task: "Fix a typo in one sentence.",
+    source: "A short paragraph with no explicit critical evidence.",
+  });
+  assert.equal(result.tier, "small");
+  assert.equal(result.targetTokenBudget, 2048);
+  assert.equal(result.qualityGateStatus, "insufficient-checks");
+  assert.equal(result.compactionCanProceedToAudit, false);
+  assert.match(result.caveat, /does not call an LLM/);
+});
+
+test("adaptive budget scales up for complex, multi-file investigations", () => {
+  const source = [
+    ...Array.from({ length: 220 }, (_, i) => "INFO: worker item " + String(i + 1).padStart(3, "0") + " completed"),
+    "ERROR: migration failed due to lock timeout in src/db/migrate.mjs",
+    "FATAL: expected schema version 18, actual 17",
+    ...Array.from({ length: 120 }, (_, i) => "INFO: cleanup record " + String(i + 1).padStart(3, "0")),
+  ].join("\n");
+  const result = recommendContextBudget({
+    task: "Investigate the root cause of this cross-file migration regression and verify the test suite.",
+    source,
+    requiredFacts: ["migration failed", "lock timeout", "src/db/migrate.mjs", "schema version 18", "actual 17"],
+    changedFiles: 9,
+    failedTests: 4,
+    stackFrames: 8,
+  });
+  assert.equal(result.tier, "large");
+  assert.equal(result.targetTokenBudget, 12288);
+  assert.equal(result.qualityGateStatus, "ready-for-audit");
+  assert.equal(result.compactionCanProceedToAudit, true);
+  assert.ok(result.complexityScore >= 6);
+  assert.ok(result.evidenceSignals.length >= 4);
+  assert.ok(result.strategy.some((step) => /broader evidence/i.test(step)));
+});
+
+test("adaptive budget fails closed when a requested fact is absent from supplied source", () => {
+  const result = recommendContextBudget({
+    task: "Investigate the config error",
+    source: "ERROR: invalid configuration in src/config.mjs",
+    requiredFacts: ["src/config.mjs", "the missing fallback key"],
+  });
+  assert.equal(result.qualityGateStatus, "required-facts-not-in-source");
+  assert.deepEqual(result.missingRequiredFacts, ["the missing fallback key"]);
+  assert.equal(result.compactionCanProceedToAudit, false);
+});
+
+test("adaptive compaction is held when no quality audit basis exists", () => {
+  const source = "INFO: routine line one\nINFO: routine line two";
+  const result = adaptiveCompactText({ task: "Summarize routine output", source });
+  assert.equal(result.status, "held-no-audit-basis");
+  assert.equal(result.text, source);
+  assert.equal(result.compactionStats, null);
+  assert.equal(result.budget.qualityGateStatus, "insufficient-checks");
+});
+
+test("adaptive compaction selects a budget, audits its output, and returns retained evidence", () => {
+  const source = [
+    "INFO: service booted",
+    "INFO: service booted",
+    "ERROR: permission denied at src/app.mjs",
+    "Expected 4 records, actual 3",
+    "INFO: shutdown complete",
+  ].join("\n");
+  const result = adaptiveCompactText({
+    task: "Compact this short permission error report",
+    source,
+    requiredFacts: ["permission denied", "src/app.mjs", "Expected 4 records, actual 3"],
+  });
+  assert.equal(result.status, "compacted");
+  assert.equal(result.finalQualityAudit.status, "pass");
+  assert.match(result.text, /permission denied/);
+  assert.match(result.text, /Expected 4 records, actual 3/);
+  assert.equal(result.budget.compactionCanProceedToAudit, true);
+});
+
+test("adaptive compaction never returns a lossy compact result as the final text after failed recovery", () => {
+  const source = [
+    ...Array.from({ length: 180 }, (_, i) => "INFO: worker heartbeat item " + String(i + 1).padStart(3, "0")),
+    "prefix value split",
+    "across source lines",
+    ...Array.from({ length: 180 }, (_, i) => "INFO: worker cleanup item " + String(i + 1).padStart(3, "0")),
+  ].join("\n");
+  const result = adaptiveCompactText({
+    task: "Investigate a long background worker log",
+    source,
+    requiredFacts: ["value split across"],
+  });
+  if (result.status === "fallback-full-source") {
+    assert.equal(result.text, source);
+    assert.equal(result.finalQualityAudit.qualityGatePassed, false);
+  } else {
+    assert.equal(result.finalQualityAudit.qualityGatePassed, true);
+  }
+});
+
+test("adaptive compaction CLI returns a safe held status without an audit basis", () => {
+  const source = "INFO: only routine output";
+  const run = spawnSync(process.execPath, [join(root, "scripts/context-quality.mjs"), "adaptive-compact"], {
+    input: JSON.stringify({ task: "Summarize", source }),
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  const result = JSON.parse(run.stdout);
+  assert.equal(result.status, "held-no-audit-basis");
+  assert.equal(result.text, source);
+});
+
+test("adaptive budget validates its input instead of guessing from malformed metadata", () => {
+  assert.throws(() => recommendContextBudget({ task: 42 }), /task must be a string/);
+  assert.throws(() => recommendContextBudget({ changedFiles: -1 }), /changedFiles must be a non-negative integer/);
+  assert.throws(() => recommendContextBudget({ complexityHint: "extreme" }), /complexityHint must be one of/);
+});
+
+test("budget CLI emits the deterministic recommendation as JSON", () => {
+  const run = spawnSync(process.execPath, [join(root, "scripts/context-quality.mjs"), "budget"], {
+    input: JSON.stringify({
+      task: "Fix a typo in a sentence",
+      source: "plain sentence text",
+    }),
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  const result = JSON.parse(run.stdout);
+  assert.equal(result.tier, "small");
+  assert.equal(result.targetTokenBudget, 2048);
 });
 
 test("token counts are marked as a heuristic and handle empty input", () => {

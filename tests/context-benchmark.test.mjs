@@ -48,13 +48,53 @@ test("benchmark credits savings only when the compact-context audit passes", () 
   assert.ok(report.summary.meanQualityAdjustedSavingsPercentEstimate < report.summary.meanRawCharacterReductionPercentEstimate);
 });
 
+test("benchmark reports adaptive budget tiers and fails closed without an audit basis", () => {
+  const report = runContextBenchmark();
+  const counts = report.summary.adaptiveBudgetTierCounts;
+  assert.equal(counts.small + counts.medium + counts.large, report.summary.cases);
+  assert.equal(
+    report.summary.budgetCasesReadyForQualityAudit + report.summary.budgetCasesHeldForInsufficientEvidence,
+    report.summary.cases,
+  );
+  const unscoped = report.results.find((result) => result.id === "no-audit-basis");
+  assert.equal(unscoped.adaptiveBudget.tier.length > 0, true);
+  assert.equal(unscoped.adaptiveBudget.qualityGateStatus, "insufficient-checks");
+  assert.equal(unscoped.adaptiveBudget.compactionCanProceedToAudit, false);
+});
+
+test("adaptive compaction benchmark safely holds unscoped input and audits completed compactions", () => {
+  const report = runContextBenchmark();
+  const counts = report.summary;
+  assert.equal(
+    counts.adaptiveCompactionsCompleted +
+      counts.adaptiveCompactionsHeld +
+      counts.adaptiveCompactionsFellBackToFullSource,
+    counts.cases,
+  );
+
+  const unscoped = report.results.find((result) => result.id === "no-audit-basis");
+  assert.equal(unscoped.adaptiveCompaction.status, "held-no-audit-basis");
+  assert.equal(unscoped.adaptiveCompaction.returnedFullSource, true);
+
+  for (const item of report.results) {
+    if (item.adaptiveCompaction.status === "compacted" || item.adaptiveCompaction.status === "compacted-with-recovery") {
+      assert.equal(item.adaptiveCompaction.finalQualityGatePassed, true, item.id);
+    }
+    if (item.adaptiveCompaction.status === "fallback-full-source") {
+      assert.equal(item.adaptiveCompaction.returnedFullSource, true, item.id);
+    }
+  }
+});
+
 test("benchmark CLI emits valid JSON and exits successfully for expected outcomes", () => {
   const run = spawnSync(process.execPath, [join(root, "scripts/context-benchmark.mjs"), "--json"], {
     encoding: "utf8",
   });
   assert.equal(run.status, 0, run.stderr);
   const report = JSON.parse(run.stdout);
-  assert.equal(report.benchmarkVersion, "1.0.0");
+  assert.equal(report.benchmarkVersion, "1.1.0");
   assert.equal(report.summary.expectedOutcomesMet, report.summary.cases);
   assert.match(report.scope, /does not call an LLM/);
+  assert.ok(report.summary.adaptiveBudgetTierCounts);
+  assert.match(run.stdout, /adaptiveBudgetTierCounts/);
 });
