@@ -64,7 +64,7 @@ In the DSH session, ask it to run these checks using the named Context Mode tool
 
    ```bash
    mkdir -p /tmp/dsh-context-smoke
-   printf '%s\\n' 'DSH_CONTEXT_SMOKE_UNIQUE: amber-kestrel-7391' > /tmp/dsh-context-smoke/probe.txt
+   printf '%s\n' 'DSH_CONTEXT_SMOKE_UNIQUE: amber-kestrel-7391' > /tmp/dsh-context-smoke/probe.txt
    ```
 
    Then use `ctx_index` to index only `/tmp/dsh-context-smoke` with source label `dsh-context-smoke`. Use `ctx_search` to search for the exact term `amber-kestrel-7391`. **PASS when** the search result points back to the test source and contains the unique marker.
