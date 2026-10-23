@@ -1,4 +1,4 @@
-# DSH Context Mode runtime, exposed through DSH's native MCP client.
+# DeepSeek Harness bundle for the upstream Context Mode MCP runtime and DSH Skills.
 - insert:
     - id: dsh-context-mode-mcp
       name: '@deepseek-ai/dsh-mcp-client'
@@ -7,7 +7,8 @@
         transport: stdio
         command: node
         args:
-          - !!js "require('node:path').join(require.resolve('context-mode/package.json'), '..', 'cli.bundle.mjs')"
+          # "context-mode/cli" is an exported subpath in context-mode@1.0.169.
+          - !!js "require.resolve('context-mode/cli')"
         cwd: !!js "process.cwd()"
         env:
           CONTEXT_MODE_PLATFORM: dsh

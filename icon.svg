@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Context Mode for DeepSeek Harness</title>
+  <rect width="128" height="128" rx="26" fill="#152238"/>
+  <path d="M28 35h72M28 51h58M28 67h44M28 83h30" fill="none" stroke="#E7F1FF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M83 47l15 17-15 17" fill="none" stroke="#64DDBA" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M58 95h42" fill="none" stroke="#64DDBA" stroke-width="8" stroke-linecap="round"/>
+</svg>
