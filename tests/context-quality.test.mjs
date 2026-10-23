@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { compactText, assessQuality, recoverContext, estimateTokens, recommendContextBudget } from "../lib/context-quality.mjs";
+import { compactText, assessQuality, recoverContext, estimateTokens, recommendContextBudget, adaptiveCompactText } from "../lib/context-quality.mjs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -118,6 +118,67 @@ test("adaptive budget fails closed when a requested fact is absent from supplied
   assert.equal(result.qualityGateStatus, "required-facts-not-in-source");
   assert.deepEqual(result.missingRequiredFacts, ["the missing fallback key"]);
   assert.equal(result.compactionCanProceedToAudit, false);
+});
+
+test("adaptive compaction is held when no quality audit basis exists", () => {
+  const source = "INFO: routine line one\nINFO: routine line two";
+  const result = adaptiveCompactText({ task: "Summarize routine output", source });
+  assert.equal(result.status, "held-no-audit-basis");
+  assert.equal(result.text, source);
+  assert.equal(result.compactionStats, null);
+  assert.equal(result.budget.qualityGateStatus, "insufficient-checks");
+});
+
+test("adaptive compaction selects a budget, audits its output, and returns retained evidence", () => {
+  const source = [
+    "INFO: service booted",
+    "INFO: service booted",
+    "ERROR: permission denied at src/app.mjs",
+    "Expected 4 records, actual 3",
+    "INFO: shutdown complete",
+  ].join("\n");
+  const result = adaptiveCompactText({
+    task: "Compact this short permission error report",
+    source,
+    requiredFacts: ["permission denied", "src/app.mjs", "Expected 4 records, actual 3"],
+  });
+  assert.equal(result.status, "compacted");
+  assert.equal(result.finalQualityAudit.status, "pass");
+  assert.match(result.text, /permission denied/);
+  assert.match(result.text, /Expected 4 records, actual 3/);
+  assert.equal(result.budget.compactionCanProceedToAudit, true);
+});
+
+test("adaptive compaction never returns a lossy compact result as the final text after failed recovery", () => {
+  const source = [
+    ...Array.from({ length: 180 }, (_, i) => "INFO: worker heartbeat item " + String(i + 1).padStart(3, "0")),
+    "prefix value split",
+    "across source lines",
+    ...Array.from({ length: 180 }, (_, i) => "INFO: worker cleanup item " + String(i + 1).padStart(3, "0")),
+  ].join("\n");
+  const result = adaptiveCompactText({
+    task: "Investigate a long background worker log",
+    source,
+    requiredFacts: ["value split across"],
+  });
+  if (result.status === "fallback-full-source") {
+    assert.equal(result.text, source);
+    assert.equal(result.finalQualityAudit.qualityGatePassed, false);
+  } else {
+    assert.equal(result.finalQualityAudit.qualityGatePassed, true);
+  }
+});
+
+test("adaptive compaction CLI returns a safe held status without an audit basis", () => {
+  const source = "INFO: only routine output";
+  const run = spawnSync(process.execPath, [join(root, "scripts/context-quality.mjs"), "adaptive-compact"], {
+    input: JSON.stringify({ task: "Summarize", source }),
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  const result = JSON.parse(run.stdout);
+  assert.equal(result.status, "held-no-audit-basis");
+  assert.equal(result.text, source);
 });
 
 test("adaptive budget validates its input instead of guessing from malformed metadata", () => {
