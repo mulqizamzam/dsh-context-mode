@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { compactText, assessQuality, recoverContext } from "../lib/context-quality.mjs";
+import { compactText, assessQuality, recoverContext, recommendContextBudget } from "../lib/context-quality.mjs";
 
 const mode = process.argv[2];
 if (!["compact", "quality", "recover"].includes(mode)) {
@@ -21,7 +21,8 @@ let result;
 try {
   if (mode === "compact") result = compactText(input.source, input.options ?? {});
   else if (mode === "quality") result = assessQuality(input);
-  else result = recoverContext(input);
+  else if (mode === "recover") result = recoverContext(input);
+  else result = recommendContextBudget(input);
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   if (mode === "quality" && result.status === "fail") process.exitCode = 1;
 } catch (error) {
