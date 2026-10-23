@@ -96,5 +96,5 @@ test("benchmark CLI emits valid JSON and exits successfully for expected outcome
   assert.equal(report.summary.expectedOutcomesMet, report.summary.cases);
   assert.match(report.scope, /does not call an LLM/);
   assert.ok(report.summary.adaptiveBudgetTierCounts);
-  assert.match(run.stdout, /Adaptive budget tiers/);
+  assert.match(run.stdout, /adaptiveBudgetTierCounts/);
 });
