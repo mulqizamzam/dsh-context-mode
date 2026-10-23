@@ -4,14 +4,14 @@
 
 Paket versi `0.3.0` menghubungkan DSH `0.2.1-rc.2` dengan runtime MCP upstream [`mksglu/context-mode`](https://github.com/mksglu/context-mode) versi `1.0.169`. Ini port independen, bukan produk resmi DeepSeek. Integrasi runtime end-to-end tetap perlu diverifikasi pada instalasi DSH yang sebenarnya.
 
-## Fitur baru: Quality-First Context Engineering
+## Fitur: Quality-First Context Engineering + Adaptive Context Budget
 
 - **`ctx-compact`**: meringkas output besar dengan deduplikasi berurutan dan ekstraksi terarah; menjaga error, nilai expected/actual, status test, dan referensi sumber.
 - **`ctx-quality`**: mengaudit fakta wajib dan baris kritis yang bertahan setelah kompaksi. `pass` menandakan pemeriksaan retensi berhasil, bukan jaminan jawaban benar.
 - **`ctx-recover`**: memulihkan cuplikan dari sumber yang diberikan saat audit menemukan fakta yang hilang, lalu menjalankan pemeriksaan kembali.
 - **`ctx-budget`**: merekomendasikan budget konteks kecil, sedang, atau besar berdasarkan kompleksitas tugas dan bukti yang tersedia; mencegah klaim penghematan aman jika dasar audit tidak cukup.
 
-Ini adalah workflow Skills yang menggunakan tool Context Mode upstream yang tersedia—**bukan MCP tools baru**. `ctx-budget` dan helper budget bersifat advisory: tidak mengubah context window model secara otomatis. Paket juga menyertakan helper JavaScript deterministik untuk kompaksi, audit retensi, serta pemulihan cuplikan sumber. Helper tidak mengakses file, indeks, atau jaringan secara otomatis.
+Ini adalah workflow Skills yang menggunakan tool Context Mode upstream yang tersedia—**bukan MCP tools baru**. `ctx-budget` memilih strategi secara advisory, sementara helper `adaptive-compact` benar-benar memproses teks sumber yang diberikan, lalu melakukan audit dan fallback jika perlu; keduanya tidak mengubah context window model secara otomatis. Paket juga menyertakan helper JavaScript deterministik untuk kompaksi, audit retensi, serta pemulihan cuplikan sumber. Helper tidak mengakses file, indeks, atau jaringan secara otomatis.
 
 ## Prasyarat dan instalasi
 
@@ -41,6 +41,9 @@ printf '%s' '{"source":"INFO: start\nINFO: start\nERROR: permission denied"}' | 
 # Rekomendasikan budget berdasarkan tugas dan bukti yang tersedia
 printf '%s' '{"task":"Investigate the root cause of a cross-file regression","source":"ERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"],"changedFiles":4,"failedTests":2,"stackFrames":5}' | node scripts/context-quality.mjs budget
 
+# Kompaksi adaptif, audit, recovery, dan fallback ke sumber penuh
+printf '%s' '{"task":"Investigate the root cause of a cross-file regression","source":"ERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"]}' | node scripts/context-quality.mjs adaptive-compact
+
 # Audit fakta yang wajib dipertahankan
 printf '%s' '{"source":"ERROR: permission denied in src/app.mjs","compact":"ERROR: permission denied in src/app.mjs","requiredFacts":["permission denied","src/app.mjs"]}' | node scripts/context-quality.mjs quality
 
@@ -48,7 +51,7 @@ printf '%s' '{"source":"ERROR: permission denied in src/app.mjs","compact":"ERRO
 printf '%s' '{"source":"start\nroute failed\nERROR: missing auth\nshutdown","compact":"start\nshutdown","requiredFacts":["missing auth"]}' | node scripts/context-quality.mjs recover
 ```
 
-Kompaksi hanya menggabungkan baris non-kosong yang identik dan berurutan; baris kritis tidak dibuang hanya demi memenuhi batas jumlah baris. Rentang baris yang dilewati ditandai agar sumber bisa diperiksa kembali. Gunakan helper `quality` untuk memeriksa `requiredFacts` dan baris kritis; mode `recover` mengembalikan cuplikan dari source yang diberikan, bukan mencari file atau indeks secara otomatis. Mode `budget` memberi rekomendasi `small` (2.048), `medium` (6.144), atau `large` (12.288) token estimasi beserta alasan dan status kesiapan quality gate. Angka ini target kebijakan advisory, bukan batas token aktual.
+Kompaksi hanya menggabungkan baris non-kosong yang identik dan berurutan; baris kritis tidak dibuang hanya demi memenuhi batas jumlah baris. Rentang baris yang dilewati ditandai agar sumber bisa diperiksa kembali. Gunakan helper `quality` untuk memeriksa `requiredFacts` dan baris kritis; mode `recover` mengembalikan cuplikan dari source yang diberikan, bukan mencari file atau indeks secara otomatis. Mode `budget` memberi rekomendasi `small` (2.048), `medium` (6.144), atau `large` (12.288) token estimasi beserta alasan dan status kesiapan quality gate. Angka ini target kebijakan advisory, bukan batas token aktual. Mode `adaptive-compact` menerapkan strategi berdasarkan tier tersebut, mengaudit hasilnya, mencoba recovery terarah saat fakta hilang, dan mengembalikan sumber asli jika audit tetap gagal. Status `compacted` dan `compacted-with-recovery` berarti audit bukti lulus; `held-*` berarti tidak ada kompaksi; `fallback-full-source` berarti keluaran dipulihkan ke sumber lengkap.
 
 **Keterbatasan metrik:** jumlah token menggunakan `ceil(karakter / 4)` sebagai perkiraan, bukan tokenizer model yang akurat. Retensi fakta tidak membuktikan kualitas semantik. Evaluasi kualitas tetap perlu benchmark tugas, tes, bukti sumber, atau review manusia. Jika tidak ada fakta wajib atau baris kritis untuk diaudit, hasilnya `insufficient-checks`, bukan `pass`.
 
