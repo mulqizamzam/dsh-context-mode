@@ -26,6 +26,7 @@ assert.match(readme, /Benchmark: full context vs compact context/i);
 
 for (const path of [
   "lib/context-quality.mjs",
+  "docs/adaptive-context-budget.md",
   "skills/ctx-budget/SKILL.md",
   "lib/context-benchmark.mjs",
   "scripts/context-quality.mjs",
@@ -56,6 +57,6 @@ console.log(JSON.stringify({
   version:pkg.version,
   dsh:pkg.engines.dsh,
   skills:requiredSkills,
-  qualityHelpers:["compactText","assessQuality","recoverContext","recommendContextBudget"],
+  qualityHelpers:["compactText","assessQuality","recoverContext","recommendContextBudget","adaptiveCompactText"],
   benchmark:"deterministic evidence-retention only; no model calls"
 },null,2));
