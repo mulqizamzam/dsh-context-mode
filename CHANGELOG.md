@@ -2,6 +2,9 @@
 
 ## 0.2.0 — quality-first context savings
 
+- Add a deterministic full-context vs compact-context evidence-retention benchmark with positive and negative-control fixtures, quality-gated savings, and recovery assessment.
+- Run the benchmark in CI; report character/token estimates separately from semantic answer quality.
+
 - Add `ctx-compact`, `ctx-quality`, and `ctx-recover` Skills.
 - Add a dependency-free helper for conservative log compaction, required-fact/critical-line retention audits, and source-grounded excerpt recovery.
 - Emit explicit line references and duplicate counts; keep detected critical lines even when the output line cap is reached.

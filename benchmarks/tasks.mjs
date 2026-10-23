@@ -1,0 +1,105 @@
+const repeated = (line, count) => Array.from({ length: count }, () => line);
+const sequenced = (prefix, count) => Array.from({ length: count }, (_, i) => `${prefix} ${String(i + 1).padStart(3, "0")}`);
+
+export function createBenchmarkTasks() {
+  return [
+    {
+      id: "build-install-failure",
+      task: "Find the root cause of a failed dependency installation.",
+      source: [
+        "Build started: workspace install",
+        ...repeated("INFO: resolving workspace dependencies", 100),
+        "ERROR: dependency install failed for context-mode@1.0.169 with ERR_PNPM_IGNORED_BUILDS; exit code 1",
+        "Caused by: dependency build-script approval is required",
+        ...sequenced("INFO: post-install progress item", 50),
+        "Build summary generated",
+      ].join("\n"),
+      requiredFacts: ["context-mode@1.0.169", "ERR_PNPM_IGNORED_BUILDS", "exit code 1"],
+      options: { maxLines: 24, headLines: 3, tailLines: 3 },
+      expectedStatus: "pass",
+    },
+    {
+      id: "unit-test-regression",
+      task: "Identify the failed unit test, assertion, and source location.",
+      source: [
+        "Unit test run: auth suite",
+        ...sequenced("PASS: unrelated test case", 65),
+        "ERROR: refresh token path regressed in tests/auth-refresh.test.mjs:88",
+        "AssertionError: expected status 401, actual 200",
+        "at tests/auth-refresh.test.mjs:88:10",
+        ...sequenced("PASS: unrelated cleanup case", 40),
+        "Test process finished",
+      ].join("\n"),
+      requiredFacts: ["refresh token path", "expected status 401", "actual 200", "tests/auth-refresh.test.mjs:88"],
+      options: { maxLines: 24, headLines: 3, tailLines: 3 },
+      expectedStatus: "pass",
+    },
+    {
+      id: "api-error-triage",
+      task: "Extract the failing request, request identifier, and retry count.",
+      source: [
+        "API request diagnostics",
+        ...repeated("event=retry status=200 endpoint=/health", 90),
+        "ERROR: POST /v2/payments returned 502; request_id=req-7f2; retry_count=4",
+        "Caused by: upstream gateway timeout",
+        ...sequenced("event=metrics flush", 45),
+        "Diagnostics complete",
+      ].join("\n"),
+      requiredFacts: ["POST /v2/payments", "502", "request_id=req-7f2", "retry_count=4"],
+      options: { maxLines: 22, headLines: 3, tailLines: 3 },
+      expectedStatus: "pass",
+    },
+    {
+      id: "migration-drift",
+      task: "Explain a migration failure using the expected and observed schema state.",
+      source: [
+        "Database migration started",
+        ...sequenced("INFO: migration progress", 55),
+        "FATAL: migration aborted: lock timeout while applying migration 018_add_index",
+        "Expected schema version 18, actual 17",
+        "ERROR: migration transaction rolled back",
+        ...sequenced("INFO: cleanup progress", 50),
+        "Database migration ended",
+      ].join("\n"),
+      requiredFacts: ["lock timeout", "018_add_index", "Expected schema version 18", "actual 17", "transaction rolled back"],
+      options: { maxLines: 24, headLines: 3, tailLines: 3 },
+      expectedStatus: "pass",
+    },
+    {
+      id: "security-warning",
+      task: "Identify the exposed configuration key and the file to investigate.",
+      source: [
+        "Security scan started",
+        ...sequenced("INFO: scan file", 60),
+        "WARN: secret-like value detected in config/.env; key=SERVICE_TOKEN",
+        ...sequenced("INFO: scan complete file", 55),
+        "Security scan finished",
+      ].join("\n"),
+      requiredFacts: ["secret-like value detected", "config/.env", "SERVICE_TOKEN"],
+      options: { maxLines: 20, headLines: 3, tailLines: 3 },
+      expectedStatus: "pass",
+    },
+    {
+      id: "middle-line-fact-loss",
+      task: "Find the deployment region that appears once in a long operational log.",
+      source: [
+        "Ingestion run started",
+        ...sequenced("INFO: batch event", 49),
+        "deployment_region=eu-west-2",
+        ...sequenced("INFO: batch event", 60),
+        "Ingestion summary complete",
+      ].join("\n"),
+      requiredFacts: ["deployment_region=eu-west-2"],
+      options: { maxLines: 8, headLines: 2, tailLines: 2 },
+      expectedStatus: "fail",
+    },
+    {
+      id: "no-audit-basis",
+      task: "Compact routine progress output when no task-critical facts have been specified.",
+      source: sequenced("INFO: background worker tick", 110).join("\n"),
+      requiredFacts: [],
+      options: { maxLines: 10, headLines: 2, tailLines: 2 },
+      expectedStatus: "insufficient-checks",
+    },
+  ];
+}

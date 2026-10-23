@@ -13,4 +13,5 @@ jobs:
           node-version: "22"
       - run: node --check index.mjs
       - run: npm test
+      - run: npm run benchmark
       - run: npm pack --dry-run

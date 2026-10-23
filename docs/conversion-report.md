@@ -60,3 +60,10 @@ The following checks were executed in the local build environment (Node.js `v22.
 - `npm pack --dry-run --json` — passed after its `prepack` lifecycle reran the checks and tests; package preview contains the runtime helper, CLI, and 12 Skill directories.
 
 These are deterministic package/static checks, **not** an end-to-end DSH runtime test. A DSH runtime smoke test must install this package into a clean `0.2.1-rc.2` profile and verify MCP tool registration, Skill discovery, execution, index/search, reconnection, purge confirmation, and clean removal. This was not possible in the current environment. The public repository is published at https://github.com/mulqizamzam/dsh-context-mode. GitHub Actions verifies source and packaging; a live install against DSH `0.2.1-rc.2` is still required to certify component loading and upstream MCP runtime behavior.
+
+
+## Deterministic full-vs-compact benchmark
+
+The repository includes seven deterministic synthetic tasks evaluated both with full source context and compacted context. The harness reports expected-fact/critical-line retention, a fail-closed savings proxy, and targeted recovery results. CI runs `npm run benchmark`.
+
+This is a fixture-level evidence-retention benchmark. It makes no LLM calls and does not evaluate generated-answer correctness or actual model tokenization. Synthetic results must not be presented as production task-success rates. A separate model-based evaluation would require an explicitly selected model/runtime, fixed task prompts and grading criteria, and should report the model, tokenizer, repeated-run variance, latency/cost, and human-verified outcome labels.

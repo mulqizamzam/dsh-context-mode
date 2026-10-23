@@ -44,6 +44,21 @@ Kompaksi hanya menggabungkan baris non-kosong yang identik dan berurutan; baris 
 
 **Keterbatasan metrik:** jumlah token menggunakan `ceil(karakter / 4)` sebagai perkiraan, bukan tokenizer model yang akurat. Retensi fakta tidak membuktikan kualitas semantik. Evaluasi kualitas tetap perlu benchmark tugas, tes, bukti sumber, atau review manusia. Jika tidak ada fakta wajib atau baris kritis untuk diaudit, hasilnya `insufficient-checks`, bukan `pass`.
 
+## Benchmark: full context vs compact context
+
+Benchmark yang tersedia menguji **retensi bukti secara deterministik** pada tujuh fixture tugas yang sama: log instalasi, regresi test, error API, kegagalan migrasi, peringatan security, satu fakta unik di tengah log panjang, dan kasus tanpa dasar audit. Setiap fixture dijalankan sebagai konteks penuh dan konteks terkompaksi; quality gate lalu membandingkan fakta wajib serta baris kritis.
+
+Dari checkout repository, jalankan:
+
+```bash
+npm run benchmark
+npm run benchmark:json
+```
+
+Laporan mencakup reduksi karakter/token *estimasi*, pass/fail quality gate, savings yang hanya dihitung ketika audit compact lulus, dan apakah recovery terarah memperbaiki kasus gagal. Kasus fakta unik yang hilang dan kasus tanpa dasar audit sengaja disertakan sebagai kontrol negatif.
+
+**Batas penting:** benchmark ini tidak memanggil LLM, tidak menilai kebenaran semantik jawaban, dan tidak menghitung token memakai tokenizer model. Ia mengukur apakah fakta/evidence yang dinyatakan wajib masih ada dalam keluaran kompak. Hasil sintetis ini adalah benchmark retensi awal; bukan bukti bahwa akurasi tugas nyata tidak turun. Perbandingan kualitas jawaban model memerlukan evaluasi terpisah dan tidak termasuk dalam benchmark ini.
+
 ## Workflow Context Mode lainnya
 
 | Kebutuhan | Tool/workflow |

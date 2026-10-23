@@ -15,14 +15,24 @@ assert.equal(pkg.dependencies["context-mode"], "1.0.169");
 assert.equal(pkg.dsh.bundle.patch, "./cordis.patch.yml");
 assert.equal(pkg.exports["./quality"], "./lib/context-quality.mjs");
 assert.equal(pkg.bin["dsh-context-quality"], "./scripts/context-quality.mjs");
+assert.equal(pkg.scripts.benchmark, "node scripts/context-benchmark.mjs");
+assert.equal(pkg.scripts["benchmark:json"], "node scripts/context-benchmark.mjs --json");
 assert.match(patch, /@deepseek-ai\/dsh-mcp-client/);
 assert.match(patch, /@deepseek-ai\/dsh-skill-filesystem/);
 assert.match(patch, /createRequire\(baseUrl\)\.resolve\('context-mode\/cli'\)/);
 assert.doesNotMatch(patch, /\brequire\.resolve\(/);
 assert.match(readme, /Quality-First Context Engineering/i);
+assert.match(readme, /Benchmark: full context vs compact context/i);
 
-await access(resolve(root, "lib/context-quality.mjs"));
-await access(resolve(root, "scripts/context-quality.mjs"));
+for (const path of [
+  "lib/context-quality.mjs",
+  "lib/context-benchmark.mjs",
+  "scripts/context-quality.mjs",
+  "scripts/context-benchmark.mjs",
+  "benchmarks/tasks.mjs",
+  "tests/context-benchmark.test.mjs",
+]) await access(resolve(root, path));
+
 const skillsRoot = resolve(root, "skills");
 const skills = (await readdir(skillsRoot, { withFileTypes: true })).filter((e) => e.isDirectory());
 assert.equal(skills.length, 12);
@@ -37,4 +47,12 @@ for (const name of requiredSkills) {
 assert.match(readme, /ctx-compact/);
 assert.match(readme, /ctx-quality/);
 assert.match(readme, /ctx-recover/);
-console.log(JSON.stringify({ok:true,package:pkg.name,version:pkg.version,dsh:pkg.engines.dsh,skills:requiredSkills,helpers:["compactText","assessQuality","recoverContext"]},null,2));
+console.log(JSON.stringify({
+  ok:true,
+  package:pkg.name,
+  version:pkg.version,
+  dsh:pkg.engines.dsh,
+  skills:requiredSkills,
+  qualityHelpers:["compactText","assessQuality","recoverContext"],
+  benchmark:"deterministic evidence-retention only; no model calls"
+},null,2));
