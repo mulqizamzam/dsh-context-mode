@@ -4,7 +4,8 @@
 
 - **Source:** https://github.com/mksglu/context-mode (`main`, inspected package version `1.0.169`; source repository is Elastic License 2.0).
 - **Target harness:** DeepSeek Harness `0.2.1-rc.2`, tag `dsh-v0.2.1-rc.2`.
-- **Package:** `dsh-context-mode@0.2.0`, designed for `dsh.bundle.patch` installation.
+- **Original port package:** `dsh-context-mode@0.2.0`, designed for `dsh.bundle.patch` installation.
+- **Adaptive budget extension:** `dsh-context-mode@0.3.0` adds a deterministic context-budget recommender and fail-safe adaptive compaction.
 - **Architecture:** hybrid DSH bundle. DSH loads `index.mjs`; that entrypoint mounts `@deepseek-ai/dsh-mcp-client` against the pinned upstream MCP CLI and registers the adapted Skills with `@deepseek-ai/dsh-skill-filesystem`.
 - **No external hosted service is required** for the core tools. The optional Insight workflow can open the upstream hosted dashboard.
 
@@ -67,3 +68,13 @@ These are deterministic package/static checks, **not** an end-to-end DSH runtime
 The repository includes seven deterministic synthetic tasks evaluated both with full source context and compacted context. The harness reports expected-fact/critical-line retention, a fail-closed savings proxy, and targeted recovery results. CI runs `npm run benchmark`.
 
 This is a fixture-level evidence-retention benchmark. It makes no LLM calls and does not evaluate generated-answer correctness or actual model tokenization. Synthetic results must not be presented as production task-success rates. A separate model-based evaluation would require an explicitly selected model/runtime, fixed task prompts and grading criteria, and should report the model, tokenizer, repeated-run variance, latency/cost, and human-verified outcome labels.
+
+
+## Adaptive Context Budget extension (v0.3.0)
+
+- `recommendContextBudget()` assigns an advisory `small`, `medium`, or `large` target based on source volume, detected critical lines, required facts, task wording, file/test/stack counts, and an optional complexity hint.
+- `adaptiveCompactText()` applies a tier-specific compaction profile to the provided source, audits retained evidence, attempts source-grounded recovery when necessary, and returns the original supplied source if the final audit still fails.
+- CLI modes: `budget` provides the recommendation only; `adaptive-compact` runs the deterministic compact/audit/recover/fallback workflow.
+- New DSH Skill: `dsh-ctx-budget` (source directory `skills/ctx-budget/`).
+- The helper makes no LLM calls and does not read files, inspect Git, change DSH configuration, or enforce the actual model context window. Token counts remain rough character-based estimates.
+- CI on the feature branch reports 31/31 tests passing, all 7 synthetic benchmark expectations matched, adaptive tiers small=2 / medium=4 / large=1, six adaptive compactions completed (one with targeted recovery), one case held because no audit basis existed, and zero full-source fallbacks in these fixtures. These are deterministic synthetic results, not production token savings or semantic-answer-quality measurements.
