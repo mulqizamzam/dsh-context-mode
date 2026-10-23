@@ -120,9 +120,9 @@ Startup + MCP connection: PASS / FAIL / NOT RUN
 ctx_doctor: PASS / FAIL / NOT RUN
 ctx_execute: PASS / FAIL / NOT RUN
 ctx_index + ctx_search: PASS / FAIL / NOT RUN
-ctx-compact: PASS / FAIL / NOT RUN
-ctx-quality: PASS / FAIL / NOT RUN
-ctx-recover: PASS / FAIL / NOT RUN
+dsh-ctx-compact: PASS / FAIL / NOT RUN
+dsh-ctx-quality: PASS / FAIL / NOT RUN
+dsh-ctx-recover: PASS / FAIL / NOT RUN
 Restart + reconnection + search persistence: PASS / FAIL / NOT RUN
 Exact errors/log excerpts:
 Notes:
