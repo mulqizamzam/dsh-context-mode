@@ -68,7 +68,7 @@ test("benchmark CLI emits valid JSON and exits successfully for expected outcome
   });
   assert.equal(run.status, 0, run.stderr);
   const report = JSON.parse(run.stdout);
-  assert.equal(report.benchmarkVersion, "1.0.0");
+  assert.equal(report.benchmarkVersion, "1.1.0");
   assert.equal(report.summary.expectedOutcomesMet, report.summary.cases);
   assert.match(report.scope, /does not call an LLM/);
   assert.ok(report.summary.adaptiveBudgetTierCounts);
