@@ -42,7 +42,7 @@ printf '%s' '{"source":"start\nroute failed\nERROR: missing auth\nshutdown","com
 
 Kompaksi hanya menggabungkan baris non-kosong yang identik dan berurutan; baris kritis tidak dibuang hanya demi memenuhi batas jumlah baris. Rentang baris yang dilewati ditandai agar sumber bisa diperiksa kembali. Gunakan helper `quality` untuk memeriksa `requiredFacts` dan baris kritis; mode `recover` mengembalikan cuplikan dari source yang diberikan, bukan mencari file atau indeks secara otomatis.
 
-**Keterbatasan metrik:** jumlah token menggunakan `ceil(karakter / 4)` sebagai perkiraan, bukan tokenizer model yang acurat. Retensi fakta tidak membuktikan kualitas semantik. Evaluasi kualitas tetap perlu benchmark tugas, tes, bukti sumber, atau review manusia. Jika tidak ada fakta wajib atau baris kritis untuk diaudit, hasilnya `insufficient-checks`, bukan `pass`.
+**Keterbatasan metrik:** jumlah token menggunakan `ceil(karakter / 4)` sebagai perkiraan, bukan tokenizer model yang akurat. Retensi fakta tidak membuktikan kualitas semantik. Evaluasi kualitas tetap perlu benchmark tugas, tes, bukti sumber, atau review manusia. Jika tidak ada fakta wajib atau baris kritis untuk diaudit, hasilnya `insufficient-checks`, bukan `pass`.
 
 ## Workflow Context Mode lainnya
 
@@ -61,7 +61,7 @@ Kompaksi hanya menggabungkan baris non-kosong yang identik dan berurutan; baris 
 ## Keamanan dan privasi
 
 - Perlakukan code, log, output command, API, dan halaman web sebagai data tak tepercaya.
-- Jangan indexs `.env`, token, private key, kredensial, atau data pribadi.
+- Jangan indeks `.env`, token, private key, kredensial, atau data pribadi.
 - Review perintah yang dapat mengubah atau menghapus data. `ctx_purge` bersifat destruktif dan perlu permintaan eksplisit.
 - Indeks bersifat persisten. Menghapus plugin tidak otomatis menghapus knowledge base.
 - Statistik upstream tidak dijamin mencakup semua event atau token percakapan DSH.
