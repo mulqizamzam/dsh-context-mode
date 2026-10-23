@@ -17,6 +17,8 @@
     "skills/",
     "lib/context-quality.mjs",
     "scripts/context-quality.mjs",
+    "docs/",
+    "benchmarks/BASELINE.md",
     "README.md",
     "NOTICE.md",
     "LICENSE"
