@@ -8,7 +8,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 test("targets the requested DSH prerelease and pins upstream runtime", async () => {
   const pkg = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
-  assert.equal(pkg.version, "0.3.0");
+  assert.equal(pkg.version, "0.4.0");
   assert.equal(pkg.engines.dsh, "0.2.1-rc.2");
   assert.equal(pkg.dependencies["context-mode"], "1.0.169");
   assert.equal(pkg.dsh.bundle.patch, "./cordis.patch.yml");
@@ -27,9 +27,9 @@ test("mounts the upstream MCP server through DSH's native client", async () => {
 test("includes the DSH workflow Skills, including safe update guidance", async () => {
   const skillsRoot = join(root, "skills");
   const entries = (await readdir(skillsRoot, { withFileTypes: true })).filter((e) => e.isDirectory());
-  assert.equal(entries.length, 13);
+  assert.equal(entries.length, 14);
   const names = new Set(entries.map((e) => e.name));
-  for (const name of ["context-mode", "ctx-budget", "ctx-compact", "ctx-doctor", "ctx-execute", "ctx-index", "ctx-insight", "ctx-purge", "ctx-quality", "ctx-recover", "ctx-search", "ctx-stats", "ctx-upgrade"]) {
+  for (const name of ["context-mode", "ctx-budget", "ctx-compact", "ctx-plan", "ctx-doctor", "ctx-execute", "ctx-index", "ctx-insight", "ctx-purge", "ctx-quality", "ctx-recover", "ctx-search", "ctx-stats", "ctx-upgrade"]) {
     assert.ok(names.has(name), `missing skill: ${name}`);
     const skill = await readFile(join(skillsRoot, name, "SKILL.md"), "utf8");
     assert.match(skill, /^---\nname: [^\n]+\ndescription: [\s\S]*?\n---\n/);
