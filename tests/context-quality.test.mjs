@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { compactText, assessQuality, recoverContext, estimateTokens, recommendContextBudget, adaptiveCompactText } from "../lib/context-quality.mjs";
+import { compactText, assessQuality, recoverContext, estimateTokens, recommendContextBudget, adaptiveCompactText, planContextRetrieval } from "../lib/context-quality.mjs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -216,3 +216,74 @@ test("CLI reads JSON from stdin and emits machine-readable compact output", () =
   assert.match(result.text, /ERROR: permission denied/);
   assert.equal(result.stats.sourceLines, 3);
 });
+
+test("retrieval planner prioritizes exact failure search for debugging", () => {
+  const result = planContextRetrieval({
+    task: "Investigate the root cause of ERROR: token refresh failed in auth middleware",
+    knownPaths: ["src/auth/refresh.mjs"],
+    availableTools: ["ctx_search", "ctx_execute", "ctx_index"],
+    indexStatus: "available",
+  });
+  assert.equal(result.mode, "plan-only");
+  assert.equal(result.taskType, "debugging");
+  assert.equal(result.toolAvailability.known, true);
+  assert.ok(result.searchTerms.includes("token"));
+  assert.ok(result.steps.some((step) => step.toolCandidates.includes("ctx_search")));
+  assert.ok(result.steps.some((step) => /named paths/i.test(step.action)));
+  assert.ok(result.guardrails.some((rule) => /no file reads/i.test(rule)));
+});
+
+test("retrieval planner avoids searching a known-empty index and recommends bounded indexing", () => {
+  const result = planContextRetrieval({
+    task: "Debug the database migration regression",
+    indexStatus: "empty",
+    availableTools: ["ctx_search", "ctx_index"],
+  });
+  assert.equal(result.steps.some((step) => step.toolCandidates.includes("ctx_search")), false);
+  assert.ok(result.steps.some((step) => step.toolCandidates.includes("ctx_index")));
+});
+
+test("retrieval planner requires runtime tool verification when availability is omitted", () => {
+  const result = planContextRetrieval({ task: "Explain how authentication middleware works" });
+  assert.equal(result.toolAvailability.known, false);
+  assert.equal(result.toolAvailability.mustVerifyBeforeExecution, true);
+  assert.match(result.toolAvailability.note, /verify/i);
+  assert.ok(result.steps.length >= 2);
+  assert.ok(result.steps.length <= 4);
+});
+
+test("retrieval planner filters candidates to the provided runtime tool list", () => {
+  const result = planContextRetrieval({
+    task: "Implement a small retry feature",
+    availableTools: ["ctx_stats"],
+    indexStatus: "available",
+  });
+  assert.equal(result.steps.some((step) => step.toolCandidates.length > 0), false);
+  assert.equal(result.toolAvailability.known, true);
+});
+
+test("retrieval planner validates inputs", () => {
+  assert.throws(() => planContextRetrieval({ task: "" }), /non-empty string/);
+  assert.throws(() => planContextRetrieval({ task: "debug", knownPaths: [42] }), /knownPaths/);
+  assert.throws(() => planContextRetrieval({ task: "debug", availableTools: "ctx_search" }), /availableTools/);
+  assert.throws(() => planContextRetrieval({ task: "debug", indexStatus: "maybe" }), /indexStatus/);
+  assert.throws(() => planContextRetrieval({ task: "debug", maxSteps: 7 }), /maxSteps/);
+});
+
+test("retrieval planner CLI emits a machine-readable plan without executing retrieval", () => {
+  const run = spawnSync(process.execPath, [join(root, "scripts/context-quality.mjs"), "plan"], {
+    input: JSON.stringify({
+      task: "Investigate why session renewal failed",
+      availableTools: ["ctx_search"],
+      indexStatus: "available",
+    }),
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  const result = JSON.parse(run.stdout);
+  assert.equal(result.mode, "plan-only");
+  assert.equal(result.taskType, "debugging");
+  assert.ok(Array.isArray(result.steps));
+  assert.ok(result.guardrails.some((rule) => /Plan only/i.test(rule)));
+});
+
