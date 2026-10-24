@@ -4,14 +4,15 @@
 
 Paket versi `0.3.0` menghubungkan DSH `0.2.1-rc.2` dengan runtime MCP upstream [`mksglu/context-mode`](https://github.com/mksglu/context-mode) versi `1.0.169`. Ini port independen, bukan produk resmi DeepSeek. Integrasi runtime end-to-end tetap perlu diverifikasi pada instalasi DSH yang sebenarnya.
 
-## Fitur: Quality-First Context Engineering + Adaptive Context Budget
+## Fitur: Quality-First Context Engineering + Adaptive Context Budget + Retrieval Planning
 
 - **`ctx-compact`**: meringkas output besar dengan deduplikasi berurutan dan ekstraksi terarah; menjaga error, nilai expected/actual, status test, dan referensi sumber.
 - **`ctx-quality`**: mengaudit fakta wajib dan baris kritis yang bertahan setelah kompaksi. `pass` menandakan pemeriksaan retensi berhasil, bukan jaminan jawaban benar.
 - **`ctx-recover`**: memulihkan cuplikan dari sumber yang diberikan saat audit menemukan fakta yang hilang, lalu menjalankan pemeriksaan kembali.
 - **`ctx-budget`**: merekomendasikan budget konteks kecil, sedang, atau besar berdasarkan kompleksitas tugas dan bukti yang tersedia; mencegah klaim penghematan aman jika dasar audit tidak cukup.
+- **`ctx-plan`**: menyusun urutan pencarian konteks berdasarkan jenis tugas, bukti yang sudah ada, status indeks, tool yang tersedia, dan kondisi berhenti.
 
-Ini adalah workflow Skills yang menggunakan tool Context Mode upstream yang tersedia—**bukan MCP tools baru**. `ctx-budget` memilih strategi secara advisory, sementara helper `adaptive-compact` benar-benar memproses teks sumber yang diberikan, lalu melakukan audit dan fallback jika perlu; keduanya tidak mengubah context window model secara otomatis. Paket juga menyertakan helper JavaScript deterministik untuk kompaksi, audit retensi, serta pemulihan cuplikan sumber. Helper tidak mengakses file, indeks, atau jaringan secara otomatis.
+Ini adalah workflow Skills yang menggunakan tool Context Mode upstream yang tersedia—**bukan MCP tools baru**. `ctx-budget` memilih strategi secara advisory, sementara helper `adaptive-compact` benar-benar memproses teks sumber yang diberikan, lalu melakukan audit dan fallback jika perlu; keduanya tidak mengubah context window model secara otomatis. Paket juga menyertakan helper JavaScript deterministik untuk kompaksi, audit retensi, serta pemulihan cuplikan sumber. Helper tidak mengakses file, indeks, atau jaringan secara otomatis. Planner baru bersifat plan-only: ia menyarankan langkah retrieval dan bukti yang diharapkan, bukan menjalankannya.
 
 ## Prasyarat dan instalasi
 
@@ -40,6 +41,9 @@ printf '%s' '{"source":"INFO: start\nINFO: start\nERROR: permission denied"}' | 
 
 # Rekomendasikan budget berdasarkan tugas dan bukti yang tersedia
 printf '%s' '{"task":"Investigate the root cause of a cross-file regression","source":"ERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"],"changedFiles":4,"failedTests":2,"stackFrames":5}' | node scripts/context-quality.mjs budget
+
+# Rencanakan urutan retrieval sebelum mencari konteks
+printf '%s' '{"task":"Investigate why session renewal failed","availableTools":["ctx_search"],"indexStatus":"available"}' | node scripts/context-quality.mjs plan
 
 # Kompaksi adaptif, audit, recovery, dan fallback ke sumber penuh
 printf '%s' '{"task":"Investigate the root cause of a cross-file regression","source":"ERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"]}' | node scripts/context-quality.mjs adaptive-compact
@@ -83,6 +87,7 @@ Laporan mencakup reduksi karakter/token *estimasi*, pass/fail quality gate, savi
 | Diagnosis | `ctx_doctor` |
 | Insight (jika tersedia) | `ctx_insight` |
 | Rekomendasi budget konteks | `ctx-budget` (Skill) + helper `budget` |
+| Rencana pencarian konteks | `ctx-plan` (Skill) + helper `plan` |
 | Hapus knowledge base permanen | `ctx_purge` |
 
 ## Keamanan dan privasi
@@ -106,7 +111,7 @@ Jika tools tidak muncul, periksa log startup MCP, persetujuan build dependency, 
 
 - `cordis.patch.yml`: bridge MCP dan Skills provider native DSH.
 - `skills/`: petunjuk workflow DSH.
-- `lib/context-quality.mjs`: helper tanpa dependency untuk compact, quality audit, recovery, dan rekomendasi adaptive context budget.
+- `lib/context-quality.mjs`: helper tanpa dependency untuk compact, quality audit, recovery, adaptive context budget, dan rencana retrieval.
 - `scripts/context-quality.mjs`: CLI JSON-in/JSON-out.
 - `docs/conversion-report.md`: batas port dan catatan implementasi.
 

@@ -9,7 +9,7 @@ const patch = await readFile(resolve(root, "cordis.patch.yml"), "utf8");
 const readme = await readFile(resolve(root, "README.md"), "utf8");
 
 assert.equal(pkg.name, "dsh-context-mode");
-assert.equal(pkg.version, "0.3.0");
+assert.equal(pkg.version, "0.4.0");
 assert.equal(pkg.engines.dsh, "0.2.1-rc.2");
 assert.equal(pkg.dependencies["context-mode"], "1.0.169");
 assert.equal(pkg.dsh.bundle.patch, "./cordis.patch.yml");
@@ -26,6 +26,8 @@ assert.match(readme, /Benchmark: full context vs compact context/i);
 
 for (const path of [
   "lib/context-quality.mjs",
+  "docs/context-retrieval-planner.md",
+  "skills/ctx-plan/SKILL.md",
   "docs/adaptive-context-budget.md",
   "skills/ctx-budget/SKILL.md",
   "lib/context-benchmark.mjs",
@@ -37,8 +39,8 @@ for (const path of [
 
 const skillsRoot = resolve(root, "skills");
 const skills = (await readdir(skillsRoot, { withFileTypes: true })).filter((e) => e.isDirectory());
-assert.equal(skills.length, 13);
-const requiredSkills = ["context-mode", "ctx-budget", "ctx-compact", "ctx-doctor", "ctx-execute", "ctx-index", "ctx-insight", "ctx-purge", "ctx-quality", "ctx-recover", "ctx-search", "ctx-stats", "ctx-upgrade"];
+assert.equal(skills.length, 14);
+const requiredSkills = ["context-mode", "ctx-budget", "ctx-compact", "ctx-plan", "ctx-doctor", "ctx-execute", "ctx-index", "ctx-insight", "ctx-purge", "ctx-quality", "ctx-recover", "ctx-search", "ctx-stats", "ctx-upgrade"];
 for (const name of requiredSkills) {
   const file = resolve(skillsRoot, name, "SKILL.md");
   assert.ok(file.startsWith(skillsRoot + sep));
@@ -51,12 +53,14 @@ assert.match(readme, /ctx-quality/);
 assert.match(readme, /ctx-recover/);
 assert.match(readme, /Adaptive Context Budget/i);
 assert.match(readme, /ctx-budget/);
+assert.match(readme, /Retrieval Planning/i);
+assert.match(readme, /ctx-plan/);
 console.log(JSON.stringify({
   ok:true,
   package:pkg.name,
   version:pkg.version,
   dsh:pkg.engines.dsh,
   skills:requiredSkills,
-  qualityHelpers:["compactText","assessQuality","recoverContext","recommendContextBudget","adaptiveCompactText"],
+  qualityHelpers:["compactText","assessQuality","recoverContext","recommendContextBudget","adaptiveCompactText","planContextRetrieval"],
   benchmark:"deterministic evidence-retention only; no model calls"
 },null,2));
