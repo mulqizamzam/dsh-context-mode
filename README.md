@@ -17,7 +17,7 @@ Proyek ini merupakan port independen, bukan produk resmi DeepSeek maupun maintai
 | Runtime upstream | `context-mode@1.0.169` |
 | Node.js | Ikuti persyaratan DSH: `^22.19.0` atau `>=24.0.0` |
 
-## Kapabilitas utama
+## Kapabilitas: Quality-First Context Engineering, Adaptive Context Budget, dan Retrieval Planning
 
 | Area | Skill DSH | Helper / CLI | Fungsi |
 |---|---|---|---|
