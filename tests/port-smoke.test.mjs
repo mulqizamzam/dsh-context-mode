@@ -42,9 +42,11 @@ test("purge guidance requires explicit destructive intent", async () => {
   assert.match(content, /explicit/i);
 });
 
-test("README is a beginner guide in Indonesian and preserves the security boundary", async () => {
+test("README documents installation, project scope, and the security boundary", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
-  assert.match(readme, /panduan pemula/i);
+  assert.match(readme, /Instalasi/i);
+  assert.match(readme, /Kapabilitas:/i);
+  assert.match(readme, /CLI helper/i);
   assert.match(readme, /Keamanan dan privasi/i);
   assert.match(readme, /mulqizamzam\/dsh-context-mode/);
   assert.match(readme, /Quality-First Context Engineering/i);
