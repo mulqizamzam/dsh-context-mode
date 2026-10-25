@@ -1,0 +1,25 @@
+# DeepSeek Harness bundle for the upstream Context Mode MCP runtime and DSH Skills.
+- insert:
+    - id: dsh-context-mode-mcp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: context_mode
+        transport: stdio
+        command: node
+        args:
+          # Resolve from the bundle's own installation directory, not the user's cwd.
+          - !!js "process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('context-mode/cli')"
+        cwd: !!js "process.cwd()"
+        env:
+          CONTEXT_MODE_PLATFORM: dsh
+        toolCallTimeoutMs: 60000
+        failOnStartupError: false
+
+    - id: dsh-context-mode-skills
+      name: '@deepseek-ai/dsh-skill-filesystem'
+      config:
+        providerName: dsh-context-mode
+        includeDefaultRoots: false
+        customSkillDirs:
+          - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-context-mode/package.json')), 'skills')"
+        watch: true
