@@ -69,3 +69,21 @@ test("quality Skill documents a read-only fallback when helpers or ctx_execute a
   assert.match(content, /insufficient checks/);
   assert.match(content, /Do not repeat the same failed invocation in a loop/);
 });
+
+test("ctx-index Skill documents array-shaped directory filters with an example", async () => {
+  const content = await readFile(join(root, "skills/ctx-index/SKILL.md"), "utf8");
+  assert.match(content, /include.*arrays of strings/i);
+  assert.match(content, /include:\s*\[[^\]]+\]/s);
+  assert.match(content, /exclude:\s*\[/);
+  assert.match(content, /directory-only/i);
+  assert.match(content, /Do not pass `include: "src\/\*\*\/\*.ts"`/);
+});
+
+test("ctx-upgrade Skill separates DSH updates from Claude Code hook diagnostics", async () => {
+  const content = await readFile(join(root, "skills/ctx-upgrade/SKILL.md"), "utf8");
+  assert.match(content, /PreToolUse hook/i);
+  assert.match(content, /standalone Claude Code/i);
+  assert.match(content, /update dsh-context-mode/);
+  assert.match(content, /Do not read, overwrite, or change permissions/i);
+  assert.match(content, /rerun `ctx_doctor`/);
+});
