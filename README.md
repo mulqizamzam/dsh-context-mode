@@ -1,118 +1,150 @@
 # dsh-context-mode
 
-**Panduan pemula: Context Mode untuk DeepSeek Harness (DSH), dengan penghematan konteks yang mengutamakan kualitas.**
+[![CI](https://github.com/mulqizamzam/dsh-context-mode/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mulqizamzam/dsh-context-mode/actions/workflows/ci.yml)
 
-Paket versi `0.3.0` menghubungkan DSH `0.2.1-rc.2` dengan runtime MCP upstream [`mksglu/context-mode`](https://github.com/mksglu/context-mode) versi `1.0.169`. Ini port independen, bukan produk resmi DeepSeek. Integrasi runtime end-to-end tetap perlu diverifikasi pada instalasi DSH yang sebenarnya.
+**Integrasi Context Mode untuk DeepSeek Harness (DSH), dengan fokus pada retrieval yang terarah, retensi bukti, dan kompaksi konteks yang aman.**
 
-## Fitur: Quality-First Context Engineering + Adaptive Context Budget + Retrieval Planning
+`dsh-context-mode` mengemas runtime MCP upstream [Context Mode](https://github.com/mksglu/context-mode) untuk DSH, lalu menambahkan Skills dan helper deterministik untuk perencanaan retrieval, rekomendasi budget konteks, audit bukti, pemulihan cuplikan, dan kompaksi adaptif.
 
-- **`ctx-compact`**: meringkas output besar dengan deduplikasi berurutan dan ekstraksi terarah; menjaga error, nilai expected/actual, status test, dan referensi sumber.
-- **`ctx-quality`**: mengaudit fakta wajib dan baris kritis yang bertahan setelah kompaksi. `pass` menandakan pemeriksaan retensi berhasil, bukan jaminan jawaban benar.
-- **`ctx-recover`**: memulihkan cuplikan dari sumber yang diberikan saat audit menemukan fakta yang hilang, lalu menjalankan pemeriksaan kembali.
-- **`ctx-budget`**: merekomendasikan budget konteks kecil, sedang, atau besar berdasarkan kompleksitas tugas dan bukti yang tersedia; mencegah klaim penghematan aman jika dasar audit tidak cukup.
-- **`ctx-plan`**: menyusun urutan pencarian konteks berdasarkan jenis tugas, bukti yang sudah ada, status indeks, tool yang tersedia, dan kondisi berhenti.
+Proyek ini merupakan port independen, bukan produk resmi DeepSeek maupun maintainer Context Mode.
 
-Ini adalah workflow Skills yang menggunakan tool Context Mode upstream yang tersedia—**bukan MCP tools baru**. `ctx-budget` memilih strategi secara advisory, sementara helper `adaptive-compact` benar-benar memproses teks sumber yang diberikan, lalu melakukan audit dan fallback jika perlu; keduanya tidak mengubah context window model secara otomatis. Paket juga menyertakan helper JavaScript deterministik untuk kompaksi, audit retensi, serta pemulihan cuplikan sumber. Helper tidak mengakses file, indeks, atau jaringan secara otomatis. Planner baru bersifat plan-only: ia menyarankan langkah retrieval dan bukti yang diharapkan, bukan menjalankannya.
+## Ringkasan
 
-## Prasyarat dan instalasi
+| Komponen | Versi / target |
+|---|---|
+| Paket | `dsh-context-mode@0.4.0` |
+| DeepSeek Harness | `0.2.1-rc.2` |
+| Runtime upstream | `context-mode@1.0.169` |
+| Node.js | Ikuti persyaratan DSH: `^22.19.0` atau `>=24.0.0` |
 
-- DSH `0.2.1-rc.2`
-- Node.js yang memenuhi versi engine DSH; untuk DSH `0.2.1-rc.2`, gunakan Node.js `^22.19.0` atau `>=24.0.0` sesuai [metadata resmi DSH `0.2.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.1-rc.2/package.json). Paket ini sendiri mendeklarasikan `>=22.5.0`.
-- Akses package registry pada instalasi pertama
+## Kapabilitas utama
+
+| Area | Skill DSH | Helper / CLI | Fungsi |
+|---|---|---|---|
+| Perencanaan retrieval | `dsh-ctx-plan` | `planContextRetrieval()` / `plan` | Menyusun langkah retrieval, bukti yang dibutuhkan, dan kondisi berhenti. Hanya menghasilkan rencana; tidak menjalankan pencarian. |
+| Budget konteks adaptif | `dsh-ctx-budget` | `recommendContextBudget()` / `budget` | Merekomendasikan tier budget berdasarkan sinyal tugas dan sumber yang tersedia. |
+| Kompaksi | `dsh-ctx-compact` | `compactText()` / `compact` | Mengurangi repetisi berurutan serta mempertahankan penanda lokasi sumber dan baris kritis yang terdeteksi. |
+| Kompaksi adaptif | `dsh-ctx-budget` | `adaptiveCompactText()` / `adaptive-compact` | Memilih strategi, mengaudit retensi bukti, mencoba recovery terarah, dan kembali ke sumber penuh jika audit akhir tidak lulus. |
+| Audit retensi | `dsh-ctx-quality` | `assessQuality()` / `quality` | Memeriksa apakah fakta wajib dan baris kritis tetap tersedia dalam hasil kompaksi. |
+| Recovery | `dsh-ctx-recover` | `recoverContext()` / `recover` | Mengambil cuplikan di sekitar fakta yang hilang dari teks sumber yang diberikan. |
+
+Paket juga membawa Skills untuk alur kerja Context Mode: `dsh-context-mode`, `dsh-ctx-doctor`, `dsh-ctx-execute`, `dsh-ctx-index`, `dsh-ctx-insight`, `dsh-ctx-purge`, `dsh-ctx-search`, `dsh-ctx-stats`, dan `dsh-ctx-upgrade`.
+
+Skills tersebut adalah panduan workflow yang menggunakan tool upstream yang tersedia. Paket ini tidak menambahkan MCP tool baru. Nama seperti `ctx_search`, `ctx_index`, dan `ctx_execute` merujuk pada tool runtime Context Mode, sedangkan nama `dsh-ctx-*` merujuk pada Skills.
+
+## Instalasi
+
+### Prasyarat
+
+- DeepSeek Harness (`dsh`) versi `0.2.1-rc.2).
+- Node.js yang memenuhi persyaratan versi DSH. Metadata DSH yang ditargetkan menetapkan `^22.19.0 || >=24.0.0`; persyaratan ini lebih ketat daripada engine paket ini.
+- pnpm tersedia pada lingkungan instalasi plugin DSH.
+- Akses registry paket saat dependency pertama kali dipasang.
+
+### Pasang ke profil DSH
+
+Contoh berikut menggunakan profil `web`. Ganti nama profil sesuai konfigurasi lo:
 
 ```bash
-dsh plugin --profile web add github:mulqizamzam/dsh-context-mode#main
+dsh plugin --profile web add "github:mulqizamzam/dsh-context-mode#main"
 dsh --profile web
 ```
 
-Ganti `web` dengan nama profil Anda. Review prompt izin dependency/build script dan setujui hanya paket yang Anda percayai.
+Periksa prompt build script dan dependency sebelum menyetujuinya. Setujui hanya dependency yang lo percayai.
 
-## Runtime integration smoke test
+Setelah DSH dimulai, verifikasi bahwa komponen MCP `context_mode` dan provider Skills `dsh-context-mode` termuat. Koneksi MCP yang berhasil saja belum membuktikan bahwa semua tool atau Skill berfungsi.
 
-CI and local package tests do not prove that the plugin works end-to-end inside a live DSH session. Use the [runtime integration smoke-test checklist](docs/integration-smoke-test.md) to verify profile installation, bundle composition, MCP startup/tool calls, Skill discovery, indexing/search, and restart/reconnection. The live DSH checks must be run on an actual DSH installation; do not report them as passed based on CI alone.
+## CLI helper
 
-## Helper pengukuran lokal
+CLI menerima satu objek JSON melalui stdin dan mengeluarkan hasil JSON. Jalankan contoh berikut dari checkout repository:
 
-Dari checkout repository, setiap mode menerima JSON melalui stdin dan menghasilkan JSON:
+### Rencanakan retrieval
 
 ```bash
-# Ringkas output berulang
-printf '%s' '{"source":"INFO: start\nINFO: start\nERROR: permission denied"}' | node scripts/context-quality.mjs compact
-
-# Rekomendasikan budget berdasarkan tugas dan bukti yang tersedia
-printf '%s' '{"task":"Investigate the root cause of a cross-file regression","source":"ERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"],"changedFiles":4,"failedTests":2,"stackFrames":5}' | node scripts/context-quality.mjs budget
-
-# Rencanakan urutan retrieval sebelum mencari konteks
 printf '%s' '{"task":"Investigate why session renewal failed","availableTools":["ctx_search"],"indexStatus":"available"}' | node scripts/context-quality.mjs plan
-
-# Kompaksi adaptif, audit, recovery, dan fallback ke sumber penuh
-printf '%s' '{"task":"Investigate the root cause of a cross-file regression","source":"ERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"]}' | node scripts/context-quality.mjs adaptive-compact
-
-# Audit fakta yang wajib dipertahankan
-printf '%s' '{"source":"ERROR: permission denied in src/app.mjs","compact":"ERROR: permission denied in src/app.mjs","requiredFacts":["permission denied","src/app.mjs"]}' | node scripts/context-quality.mjs quality
-
-# Ambil cuplikan sekitar fakta yang hilang
-printf '%s' '{"source":"start\nroute failed\nERROR: missing auth\nshutdown","compact":"start\nshutdown","requiredFacts":["missing auth"]}' | node scripts/context-quality.mjs recover
 ```
 
-Kompaksi hanya menggabungkan baris non-kosong yang identik dan berurutan; baris kritis tidak dibuang hanya demi memenuhi batas jumlah baris. Rentang baris yang dilewati ditandai agar sumber bisa diperiksa kembali. Gunakan helper `quality` untuk memeriksa `requiredFacts` dan baris kritis; mode `recover` mengembalikan cuplikan dari source yang diberikan, bukan mencari file atau indeks secara otomatis. Mode `budget` memberi rekomendasi `small` (2.048), `medium` (6.144), atau `large` (12.288) token estimasi beserta alasan dan status kesiapan quality gate. Angka ini target kebijakan advisory, bukan batas token aktual. Mode `adaptive-compact` menerapkan strategi berdasarkan tier tersebut, mengaudit hasilnya, mencoba recovery terarah saat fakta hilang, dan mengembalikan sumber asli jika audit tetap gagal. Status `compacted` dan `compacted-with-recovery` berarti audit bukti lulus; `held-*` berarti tidak ada kompaksi; `fallback-full-source` berarti keluaran dipulihkan ke sumber lengkap.
+`plan` menghasilkan urutan langkah, kandidat tool, bukti yang perlu dicari, serta kondisi berhenti. Jika `availableTools` tidak diberikan, ketersediaan tool harus diperiksa pada runtime DSH sebelum langkah dijalankan.
 
-**Keterbatasan metrik:** jumlah token menggunakan `ceil(karakter / 4)` sebagai perkiraan, bukan tokenizer model yang akurat. Retensi fakta tidak membuktikan kualitas semantik. Evaluasi kualitas tetap perlu benchmark tugas, tes, bukti sumber, atau review manusia. Jika tidak ada fakta wajib atau baris kritis untuk diaudit, hasilnya `insufficient-checks`, bukan `pass`.
+### Rekomendasikan budget konteks
 
-## Benchmark: full context vs compact context
+```bash
+printf '%s' '{"task":"Investigate a cross-file regression","source":"ERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"],"changedFiles":4,"failedTests":2,"stackFrames":5}' | node scripts/context-quality.mjs budget
+```
 
-Benchmark yang tersedia menguji **retensi bukti secara deterministik** pada tujuh fixture tugas yang sama: log instalasi, regresi test, error API, kegagalan migrasi, peringatan security, satu fakta unik di tengah log panjang, dan kasus tanpa dasar audit. Setiap fixture dijalankan sebagai konteks penuh dan konteks terkompaksi; quality gate lalu membandingkan fakta wajib serta baris kritis.
+Tier yang tersedia adalah `small` (2.048), `medium` (6.144), dan `large` (12.288) token estimasi. Ini target kebijakan advisory, bukan batas token model atau pengaturan context window DSH.
+
+### Kompaksi adaptif dengan quality gate
+
+```bash
+printf '%s' '{"task":"Investigate a permission error","source":"INFO: service started\nINFO: service started\nERROR: permission denied at src/app.mjs","requiredFacts":["permission denied","src/app.mjs"]}' | node scripts/context-quality.mjs adaptive-compact
+```
+
+Alur tersebut hanya memproses teks yang dikirim dalam JSON. Helper tidak mengambil file atau data dari indeks secara otomatis.
+
+### Mode yang tersedia
+
+| Mode | Input utama | Output |
+|---|---|---|
+| `compact` | `source`, opsi kompaksi opsional | Teks kompak dan statistik |
+| `budget` | `task`, `source`, fakta wajib dan sinyal opsional | Tier, alasan, dan kesiapan audit |
+| `plan` | `task`, jalur yang diketahui, status indeks dan tool opsional | Rencana retrieval, bukti target, kondisi berhenti |
+| `adaptive-compact` | `task`, `source`, fakta wajib | Hasil kompaksi, audit, recovery, atau sumber penuh |
+| `quality` | `source`, `compact`, `requiredFacts` opsional | Status retensi, fakta yang hilang, statistik estimasi |
+| `recover` | `source`, `compact`, `requiredFacts` | Cuplikan sumber untuk fakta yang hilang |
+
+Referensi lengkap: [Adaptive Context Budget](docs/adaptive-context-budget.md) dan [Context Retrieval Planner](docs/context-retrieval-planner.md).
+
+## Quality gate dan keterbatasan
+
+- Status audit `pass` berarti pemeriksaan retensi bukti yang didefinisikan berhasil; **bukan** jaminan kebenaran semantik, diagnosis yang benar, atau keberhasilan tugas.
+- Estimasi token saat ini menggunakan `ceil(karakter / 4)`, bukan tokenizer model yang sesungguhnya.
+- Budget konteks bersifat rekomendasi; paket tidak mengubah context window model, konfigurasi DSH, atau perilaku runtime secara otomatis.
+- Planner bersifat plan-only dan tidak menjalankan retrieval, membaca file, mengubah indeks, menjalankan shell command, atau mengakses jaringan.
+- Kompaksi adaptif dapat mengembalikan teks sumber penuh jika audit akhir tidak lulus. Jangan mengartikan hasil yang ditahan atau fallback sebagai penghematan yang berhasil.
+- Benchmark saat ini memakai fixture sintetis dan menguji retensi bukti secara deterministik. Benchmark tersebut tidak memanggil LLM dan tidak mengukur kualitas jawaban model atau keberhasilan tugas nyata.
+
+## Validasi
 
 Dari checkout repository, jalankan:
 
 ```bash
+npm run check
+npm test
 npm run benchmark
 npm run benchmark:json
+npm pack --dry-run
 ```
 
-Laporan mencakup reduksi karakter/token *estimasi*, pass/fail quality gate, savings yang hanya dihitung ketika audit compact lulus, dan apakah recovery terarah memperbaiki kasus gagal. Lihat [baseline CI](benchmarks/BASELINE.md) untuk angka dari fixture sintetis versi benchmark saat ini. Kasus fakta unik yang hilang dan kasus tanpa dasar audit sengaja disertakan sebagai kontrol negatif.
+### Benchmark: full context vs compact context
 
-**Batas penting:** benchmark ini tidak memanggil LLM, tidak menilai kebenaran semantik jawaban, dan tidak menghitung token memakai tokenizer model. Ia mengukur apakah fakta/evidence yang dinyatakan wajib masih ada dalam keluaran kompak. Hasil sintetis ini adalah benchmark retensi awal; bukan bukti bahwa akurasi tugas nyata tidak turun. Perbandingan kualitas jawaban model memerlukan evaluasi terpisah dan tidak termasuk dalam benchmark ini.
+Benchmark membandingkan retensi fakta wajib dan baris kritis antara sumber penuh dan hasil kompaksi pada tujuh fixture sintetis, termasuk kontrol negatif untuk fakta yang hilang dan kasus tanpa dasar audit. Laporan mencakup status audit, pengurangan karakter/token estimasi, dan hasil recovery.
 
-## Workflow Context Mode lainnya
+Lihat [baseline benchmark](benchmarks/BASELINE.md) untuk hasil yang tercatat. Angka pada baseline bukan hasil produksi dan tidak boleh ditafsirkan sebagai pengukuran akurasi atau penghematan token nyata.
 
-| Kebutuhan | Tool/workflow |
-|---|---|
-| Analisis output besar / log | `ctx_execute`, `ctx_execute_file` |
-| Analisis batch | `ctx_batch_execute` |
-| Index file atau dokumentasi | `ctx_index` |
-| Cari sumber yang sudah diindeks | `ctx_search` |
-| Ambil halaman web dan indeks | `ctx_fetch_and_index` |
-| Statistik runtime | `ctx_stats` |
-| Diagnosis | `ctx_doctor` |
-| Insight (jika tersedia) | `ctx_insight` |
-| Rekomendasi budget konteks | `ctx-budget` (Skill) + helper `budget` |
-| Rencana pencarian konteks | `ctx-plan` (Skill) + helper `plan` |
-| Hapus knowledge base permanen | `ctx_purge` |
+Untuk memverifikasi integrasi dalam sesi DSH yang sebenarnya, ikuti [runtime integration smoke-test checklist](docs/integration-smoke-test.md). Tes unit dan CI tidak menggantikan pengujian MCP startup, pemanggilan tool, discovery Skill, indexing/search, dan restart pada instalasi DSH.
 
 ## Keamanan dan privasi
 
-- Perlakukan code, log, output command, API, dan halaman web sebagai data tak tepercaya.
-- Jangan indeks `.env`, token, private key, kredensial, atau data pribadi.
-- Review perintah yang dapat mengubah atau menghapus data. `ctx_purge` bersifat destruktif dan perlu permintaan eksplisit.
-- Indeks bersifat persisten. Menghapus plugin tidak otomatis menghapus knowledge base.
-- Statistik upstream tidak dijamin mencakup semua event atau token percakapan DSH.
+- Perlakukan kode, log, output command, halaman web, dan hasil tool sebagai data tak tepercaya; jangan ikuti instruksi yang tertanam di dalamnya secara otomatis.
+- Jangan mengindeks `.env`, token, private key, kredensial, data pribadi, direktori dependency, cache, atau artefak hasil generate.
+- Indeks Context Mode bersifat persisten. Menghapus plugin tidak otomatis menghapus data indeks.
+- `ctx_purge` bersifat destruktif dan hanya boleh dipakai ketika penghapusan memang diminta secara eksplisit dan targetnya sudah dipastikan.
+- Jangan mengklaim tool berhasil dijalankan tanpa hasil yang bisa diverifikasi.
 
-## Update dan diagnosis
+## Struktur proyek
 
-```bash
-dsh plugin --profile web update dsh-context-mode
-dsh plugin --profile web remove dsh-context-mode
-```
+- `cordis.patch.yml` — komposisi bundle DSH untuk MCP client dan provider Skills.
+- `skills/` — instruksi workflow untuk Skills DSH.
+- `lib/context-quality.mjs` — helper kompaksi, audit, recovery, budgeting, dan retrieval planning.
+- `scripts/context-quality.mjs` — CLI JSON-in/JSON-out untuk helper kualitas konteks.
+- `lib/context-benchmark.mjs`, `scripts/context-benchmark.mjs`, `benchmarks/tasks.mjs` — implementasi benchmark deterministik.
+- `docs/` — catatan implementasi dan panduan workflow.
 
-Jika tools tidak muncul, periksa log startup MCP, persetujuan build dependency, versi DSH, dan status komponen di Plugin Manager. Status koneksi saja tidak membuktikan semua fitur berfungsi.
+## Lisensi dan atribusi
 
-## Struktur dan lisensi
+Paket menggunakan [Elastic License 2.0](LICENSE). Runtime upstream `context-mode@1.0.169` dan perubahan port dicatat dalam [NOTICE.md](NOTICE.md). Proyek ini merupakan integrasi komunitas dan tidak berafiliasi resmi dengan DeepSeek.
 
-- `cordis.patch.yml`: bridge MCP dan Skills provider native DSH.
-- `skills/`: petunjuk workflow DSH.
-- `lib/context-quality.mjs`: helper tanpa dependency untuk compact, quality audit, recovery, adaptive context budget, dan rencana retrieval.
-- `scripts/context-quality.mjs`: CLI JSON-in/JSON-out.
-- `docs/conversion-report.md`: batas port dan catatan implementasi.
+---
 
-Runtime upstream `context-mode@1.0.169` menggunakan [Elastic License 2.0](LICENSE); atribusi dan pemberitahuan modifikasi dipertahankan di [NOTICE.md](NOTICE.md).
+Repository: [mulqizamzam/dsh-context-mode](https://github.com/mulqizamzam/dsh-context-mode)
