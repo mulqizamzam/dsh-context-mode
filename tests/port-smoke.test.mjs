@@ -58,3 +58,14 @@ test("upstream license and modification notice are included", async () => {
   assert.match(license, /Elastic License 2\.0/);
   assert.match(notice, /Elastic License 2\.0/);
 });
+
+test("quality Skill documents a read-only fallback when helpers or ctx_execute are unavailable", async () => {
+  const content = await readFile(join(root, "skills/ctx-quality/SKILL.md"), "utf8");
+  assert.match(content, /Fallback when helper scripts or .*ctx_execute.* unavailable/i);
+  assert.match(content, /dsh-context-quality quality/);
+  assert.match(content, /ctx_execute.*missing or fails/i);
+  assert.match(content, /grep -Fq/);
+  assert.match(content, /NOT IN SOURCE/);
+  assert.match(content, /insufficient checks/);
+  assert.match(content, /Do not repeat the same failed invocation in a loop/);
+});
