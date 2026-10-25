@@ -2,7 +2,7 @@
 
 This checklist validates the installed bundle against a real DeepSeek Harness (DSH) runtime. Passing CI, `npm test`, `npm run benchmark`, or `npm pack --dry-run` does **not** count as a runtime integration pass.
 
-Target package: `dsh-context-mode@0.2.0`  
+Target package: `dsh-context-mode@0.4.0`  
 Target DSH: `0.2.1-rc.2`
 
 ## Safety notes

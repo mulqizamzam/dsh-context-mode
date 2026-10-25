@@ -45,7 +45,7 @@ test("purge guidance requires explicit destructive intent", async () => {
 test("README documents installation, project scope, and the security boundary", async () => {
   const readme = await readFile(join(root, "README.md"), "utf8");
   assert.match(readme, /Instalasi/i);
-  assert.match(readme, /Kapabilitas utama/i);
+  assert.match(readme, /Kapabilitas:/i);
   assert.match(readme, /CLI helper/i);
   assert.match(readme, /Keamanan dan privasi/i);
   assert.match(readme, /mulqizamzam\/dsh-context-mode/);
