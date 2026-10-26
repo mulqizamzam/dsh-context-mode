@@ -287,3 +287,47 @@ test("retrieval planner CLI emits a machine-readable plan without executing retr
   assert.ok(result.guardrails.some((rule) => /Plan only/i.test(rule)));
 });
 
+
+
+test("quality assessment rejects required facts found only as substrings of larger tokens", () => {
+  const result = assessQuality({
+    source: "auth middleware protects the endpoint",
+    compact: "oauth middleware protects the endpoint",
+    requiredFacts: ["auth"],
+  });
+  assert.equal(result.status, "fail");
+  assert.equal(result.qualityGatePassed, false);
+  assert.deepEqual(result.missingFacts, ["auth"]);
+  assert.equal(result.requiredFactRetention, 0);
+});
+
+test("quality assessment respects numeric token boundaries", () => {
+  const result = assessQuality({
+    source: "Observed status 401 from the gateway",
+    compact: "Observed status 4010 from the gateway",
+    requiredFacts: ["401"],
+  });
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.missingFacts, ["401"]);
+});
+
+test("quality evidence matching remains case- and whitespace-insensitive", () => {
+  const result = assessQuality({
+    source: "Permission denied at src/auth.mjs",
+    compact: "[L1] PERMISSION   DENIED at src/auth.mjs",
+    requiredFacts: ["permission denied", "src/auth.mjs"],
+  });
+  assert.equal(result.status, "pass");
+  assert.equal(result.qualityGatePassed, true);
+});
+
+test("budget and recovery use strict whole-token matching consistently", () => {
+  const source = "oauth middleware is enabled";
+  const budget = recommendContextBudget({ task: "Check auth middleware", source, requiredFacts: ["auth"] });
+  assert.equal(budget.qualityGateStatus, "required-facts-not-in-source");
+  assert.equal(budget.compactionCanProceedToAudit, false);
+
+  const recovery = recoverContext({ source, compact: "short output", requiredFacts: ["auth"] });
+  assert.deepEqual(recovery.unresolvedFacts, ["auth"]);
+  assert.equal(recovery.requiresFullSourceFallback, true);
+});

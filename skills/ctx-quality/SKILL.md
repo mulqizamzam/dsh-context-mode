@@ -9,7 +9,8 @@ Use this workflow after compaction and before making a consequential decision fr
 
 1. Build a checklist from the actual task: user constraints, required facts, acceptance criteria, relevant file/function names, error and stack evidence, test outcomes, numeric values and unresolved uncertainty. Do not invent requirements to make the check pass.
 2. Compare the compact result with the original source or an authoritative indexed/file source. Check every required fact explicitly, along with all distinct critical errors and evidence.
-3. Prefer the deterministic helper when it is actually available:
+3. The helper matches required facts and critical evidence using case/whitespace normalization plus whole-token boundaries; a substring inside a larger token (for example, `auth` inside `oauth`) does not count as retained evidence. This is still literal evidence matching, not semantic-equivalence or contradiction detection.
+4. Prefer the deterministic helper when it is actually available:
    - From a repository checkout where the script exists, send JSON on stdin to `node scripts/context-quality.mjs quality`.
    - In an installed-package environment, use `dsh-context-quality quality` if that executable is on `PATH`.
    - The JSON input contains `source`, `compact`, and `requiredFacts`. Treat the result as a deterministic retention audit, not a semantic correctness certificate. Token counts are rough `ceil(characters / 4)` estimates.
