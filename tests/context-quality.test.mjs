@@ -331,3 +331,83 @@ test("budget and recovery use strict whole-token matching consistently", () => {
   assert.deepEqual(recovery.unresolvedFacts, ["auth"]);
   assert.equal(recovery.requiresFullSourceFallback, true);
 });
+
+
+test("CLI help is available without JSON input and documents human-readable output", () => {
+  const run = spawnSync(process.execPath, [join(root, "scripts/context-quality.mjs"), "--help"], { encoding: "utf8" });
+  assert.equal(run.status, 0);
+  assert.match(run.stdout, /Usage:/);
+  assert.match(run.stdout, /--text/);
+  assert.match(run.stdout, /Insufficient checks/);
+  assert.equal(run.stderr, "");
+});
+
+test("CLI gives actionable guidance for unknown mode, empty input, invalid JSON, and non-object JSON", () => {
+  const script = join(root, "scripts/context-quality.mjs");
+  const unknown = spawnSync(process.execPath, [script, "wat"], { input: "{}", encoding: "utf8" });
+  assert.equal(unknown.status, 2);
+  assert.match(unknown.stderr, /Unknown mode: wat/);
+  assert.match(unknown.stderr, /--help/);
+
+  const empty = spawnSync(process.execPath, [script, "quality"], { input: "   ", encoding: "utf8" });
+  assert.equal(empty.status, 2);
+  assert.match(empty.stderr, /No JSON input received/);
+
+  const invalid = spawnSync(process.execPath, [script, "quality"], { input: "{broken", encoding: "utf8" });
+  assert.equal(invalid.status, 2);
+  assert.match(invalid.stderr, /Invalid JSON on stdin/);
+
+  const nonObject = spawnSync(process.execPath, [script, "quality"], { input: "null", encoding: "utf8" });
+  assert.equal(nonObject.status, 2);
+  assert.match(nonObject.stderr, /Input must be a JSON object/);
+});
+
+test("quality CLI uses explicit exit codes for pass, fail, and insufficient checks", () => {
+  const script = join(root, "scripts/context-quality.mjs");
+  const pass = spawnSync(process.execPath, [script, "quality"], {
+    input: JSON.stringify({ source: "ERROR: permission denied", compact: "ERROR: permission denied", requiredFacts: ["permission denied"] }),
+    encoding: "utf8",
+  });
+  assert.equal(pass.status, 0, pass.stderr);
+  assert.equal(JSON.parse(pass.stdout).status, "pass");
+
+  const fail = spawnSync(process.execPath, [script, "quality"], {
+    input: JSON.stringify({ source: "ERROR: permission denied", compact: "Request ended", requiredFacts: ["permission denied"] }),
+    encoding: "utf8",
+  });
+  assert.equal(fail.status, 1);
+  assert.equal(JSON.parse(fail.stdout).status, "fail");
+
+  const insufficient = spawnSync(process.execPath, [script, "quality"], {
+    input: JSON.stringify({ source: "ordinary prose", compact: "short prose" }),
+    encoding: "utf8",
+  });
+  assert.equal(insufficient.status, 3);
+  assert.equal(JSON.parse(insufficient.stdout).status, "insufficient-checks");
+});
+
+test("CLI --text is opt-in and leaves default JSON output machine-readable", () => {
+  const script = join(root, "scripts/context-quality.mjs");
+  const input = JSON.stringify({ source: "ERROR: permission denied", compact: "ERROR: permission denied", requiredFacts: ["permission denied"] });
+  const jsonRun = spawnSync(process.execPath, [script, "quality"], { input, encoding: "utf8" });
+  assert.equal(jsonRun.status, 0);
+  assert.equal(JSON.parse(jsonRun.stdout).status, "pass");
+
+  const textRun = spawnSync(process.execPath, [script, "quality", "--text"], { input, encoding: "utf8" });
+  assert.equal(textRun.status, 0);
+  assert.match(textRun.stdout, /QUALITY GATE: PASS/);
+  assert.match(textRun.stdout, /Required facts retained: 1 \/ 1/);
+  assert.throws(() => JSON.parse(textRun.stdout));
+});
+
+test("adaptive compaction text output explains a safe hold and includes the unchanged source", () => {
+  const source = "INFO: routine output";
+  const run = spawnSync(process.execPath, [join(root, "scripts/context-quality.mjs"), "adaptive-compact", "--text"], {
+    input: JSON.stringify({ task: "Summarize routine output", source }),
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  assert.match(run.stdout, /ADAPTIVE COMPACTION: HELD-NO-AUDIT-BASIS/);
+  assert.match(run.stdout, /evidence was insufficient/i);
+  assert.match(run.stdout, /INFO: routine output/);
+});
