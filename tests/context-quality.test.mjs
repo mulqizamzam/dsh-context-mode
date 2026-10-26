@@ -411,3 +411,22 @@ test("adaptive compaction text output explains a safe hold and includes the unch
   assert.match(run.stdout, /evidence was insufficient/i);
   assert.match(run.stdout, /INFO: routine output/);
 });
+
+
+test("compaction handles large logs with linear stats bookkeeping and retains critical evidence", () => {
+  const source = Array.from({ length: 12000 }, (_, index) =>
+    index === 6000
+      ? "ERROR: critical worker failure at src/worker.mjs:6001"
+      : `INFO: worker heartbeat ${index + 1}`
+  ).join("\n");
+  const result = compactText(source, { maxLines: 64, headLines: 8, tailLines: 8 });
+
+  assert.equal(result.stats.sourceLines, 12000);
+  assert.equal(result.stats.uniqueConsecutiveRecords, 12000);
+  assert.equal(result.stats.keptRecords + result.stats.omittedRecords, 12000);
+  assert.equal(result.stats.criticalRecords, 1);
+  assert.ok(result.stats.omittedRecords > 0);
+  assert.ok(result.stats.omittedLineRanges.length > 0);
+  assert.ok(result.stats.compactChars < result.stats.sourceChars);
+  assert.match(result.text, /ERROR: critical worker failure at src\/worker\.mjs:6001/);
+});
