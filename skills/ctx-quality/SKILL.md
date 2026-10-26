@@ -14,12 +14,12 @@ Use this workflow after compaction and before making a consequential decision fr
    - From a repository checkout where the script exists, send JSON on stdin to `node scripts/context-quality.mjs quality`.
    - In an installed-package environment, use `dsh-context-quality quality` if that executable is on `PATH`.
    - The JSON input contains `source`, `compact`, and `requiredFacts`. Treat the result as a deterministic retention audit, not a semantic correctness certificate. Token counts are rough `ceil(characters / 4)` estimates.
-4. If the helper script cannot be found, do not assume the DSH working directory is the repository root. Check whether `dsh-context-quality` is installed on `PATH`; if neither entry point is available, continue with the manual fallback below. Do not install dependencies or change the environment merely to run this audit.
-5. If `ctx_execute` is missing or fails:
+5. If the helper script cannot be found, do not assume the DSH working directory is the repository root. Check whether `dsh-context-quality` is installed on `PATH`; if neither entry point is available, continue with the manual fallback below. Do not install dependencies or change the environment merely to run this audit.
+6. If `ctx_execute` is missing or fails:
    - Record the exact tool error and whether the tool was unavailable, failed to start, or returned an execution error.
    - Do not repeat the same failed invocation in a loop. Retry once only when the error appears transient and a retry is safe; otherwise switch to the manual fallback.
    - A failed `ctx_execute` call is a tooling limitation, not evidence that the compacted text passed or failed the quality audit.
-6. Reject compaction when a required fact is absent, a material conflict was flattened, a critical error was omitted, or source traceability is lost. Recover only the necessary source spans, then repeat the audit.
+7. Reject compaction when a required fact is absent, a material conflict was flattened, a critical error was omitted, or source traceability is lost. Recover only the necessary source spans, then repeat the audit.
 
 ## Fallback when helper scripts or `ctx_execute` are unavailable
 
