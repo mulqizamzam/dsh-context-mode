@@ -17,6 +17,7 @@ assert.equal(pkg.exports["./quality"], "./lib/context-quality.mjs");
 assert.equal(pkg.bin["dsh-context-quality"], "./scripts/context-quality.mjs");
 assert.equal(pkg.scripts.benchmark, "node scripts/context-benchmark.mjs");
 assert.equal(pkg.scripts["benchmark:json"], "node scripts/context-benchmark.mjs --json");
+assert.equal(pkg.scripts["benchmark:performance"], "node scripts/context-performance.mjs");
 assert.match(patch, /@deepseek-ai\/dsh-mcp-client/);
 assert.match(patch, /@deepseek-ai\/dsh-skill-filesystem/);
 assert.match(patch, /createRequire\(baseUrl\)\.resolve\('context-mode\/cli'\)/);
@@ -33,6 +34,7 @@ for (const path of [
   "skills/ctx-budget/SKILL.md",
   "lib/context-benchmark.mjs",
   "scripts/context-quality.mjs",
+  "scripts/context-performance.mjs",
   "scripts/context-benchmark.mjs",
   "benchmarks/tasks.mjs",
   "tests/context-benchmark.test.mjs",

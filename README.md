@@ -82,12 +82,13 @@ dsh --profile web --dump-config
 
 Di sesi DSH, jalankan `ctx_doctor` untuk memeriksa kesehatan runtime. Pastikan tool dan Skills yang dibutuhkan benar-benar tersedia; koneksi MCP saja tidak membuktikan semua fitur bekerja.
 
-Untuk menjalankan pemeriksaan proyek dari checkout:
+Untuk menjalankan pemeriksaan proyek dari checkout. Benchmark performa melaporkan median waktu dan scaling untuk input sintetis 1.000, 5.000, dan 15.000 baris; bandingkan hasil pada environment yang sama, karena waktu absolut bervariasi:
 
 ```bash
 npm run check
 npm test
 npm run benchmark
+npm run benchmark:performance
 ```
 
 Lihat [panduan runtime integration test](docs/integration-smoke-test.md) untuk pengujian lengkap.

@@ -14,4 +14,5 @@ jobs:
       - run: node --check index.mjs
       - run: npm test
       - run: npm run benchmark
+      - run: npm run benchmark:performance
       - run: npm pack --dry-run
