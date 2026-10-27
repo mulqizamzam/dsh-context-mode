@@ -315,7 +315,7 @@ test("quality evidence matching remains case- and whitespace-insensitive", () =>
   const result = assessQuality({
     source: "Permission denied at src/auth.mjs",
     compact: "[L1] PERMISSION   DENIED at src/auth.mjs",
-    requiredFacts: ["permission denied", "src/auth.mjs"],
+    requiredFacts: ["PERMISSION   DENIED", "SRC/AUTH.MJS"],
   });
   assert.equal(result.status, "pass");
   assert.equal(result.qualityGatePassed, true);
