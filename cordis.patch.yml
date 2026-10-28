@@ -9,7 +9,7 @@
         args:
           # Resolve from the bundle's own installation directory, not the user's cwd.
           - !!js "process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('context-mode/cli')"
-        cwd: !!js "process.cwd()"
+        cwd: !!js "process.env.CONTEXT_MODE_CWD || process.cwd()"
         env:
           CONTEXT_MODE_PLATFORM: dsh
         toolCallTimeoutMs: 60000
