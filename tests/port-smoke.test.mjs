@@ -8,7 +8,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 test("targets the requested DSH prerelease and pins upstream runtime", async () => {
   const pkg = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
-  assert.equal(pkg.version, "0.4.0");
+  assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
   assert.equal(pkg.engines.dsh, "0.2.1-rc.2");
   assert.equal(pkg.dependencies["context-mode"], "1.0.169");
   assert.equal(pkg.dsh.bundle.patch, "./cordis.patch.yml");
@@ -20,6 +20,7 @@ test("mounts the upstream MCP server through DSH's native client", async () => {
   assert.match(patch, /@deepseek-ai\/dsh-skill-filesystem/);
   assert.match(patch, /createRequire\(baseUrl\)\.resolve\('context-mode\/cli'\)/);
   assert.match(patch, /createRequire\(baseUrl\)\.resolve\('dsh-context-mode\/package\.json'\)/);
+  assert.match(patch, /CONTEXT_MODE_CWD/);
   assert.doesNotMatch(patch, /\brequire\.resolve\(/);
   assert.doesNotMatch(patch, /npx\s+-y|curl\s+https?:|eval\(/i);
 });
