@@ -442,7 +442,8 @@ test("adaptive compaction holds without source and returns an empty string, not 
 
 test("retrieval planner keeps the sufficiency/stop guardrail at low maxSteps", () => {
   const result = planContextRetrieval({
-    task: "Investigate the root cause of a cross-file regression",
+    task: "Explain the configuration flow",
+    availableTools: [],
     maxSteps: 2,
   });
   assert.equal(result.steps.length, 2);
