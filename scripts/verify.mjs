@@ -9,7 +9,7 @@ const patch = await readFile(resolve(root, "cordis.patch.yml"), "utf8");
 const readme = await readFile(resolve(root, "README.md"), "utf8");
 
 assert.equal(pkg.name, "dsh-context-mode");
-assert.match(pkg.version, /^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$/);
+assert.match(pkg.version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/);
 assert.equal(pkg.engines.dsh, "0.2.1-rc.2");
 assert.equal(pkg.dependencies["context-mode"], "1.0.169");
 assert.equal(pkg.dsh.bundle.patch, "./cordis.patch.yml");
@@ -18,11 +18,11 @@ assert.equal(pkg.bin["dsh-context-quality"], "./scripts/context-quality.mjs");
 assert.equal(pkg.scripts.benchmark, "node scripts/context-benchmark.mjs");
 assert.equal(pkg.scripts["benchmark:json"], "node scripts/context-benchmark.mjs --json");
 assert.equal(pkg.scripts["benchmark:performance"], "node scripts/context-performance.mjs");
-assert.match(patch, /@deepseek-ai\\/dsh-mcp-client/);
-assert.match(patch, /@deepseek-ai\\/dsh-skill-filesystem/);
-assert.match(patch, /createRequire\\(baseUrl\\)\\.resolve\\('context-mode\\/cli'\\)/);
+assert.match(patch, /@deepseek-ai\/dsh-mcp-client/);
+assert.match(patch, /@deepseek-ai\/dsh-skill-filesystem/);
+assert.match(patch, /createRequire\(baseUrl\)\.resolve\('context-mode\/cli'\)/);
 assert.match(patch, /CONTEXT_MODE_CWD/);
-assert.doesNotMatch(patch, /\\brequire\\.resolve\\(/);
+assert.doesNotMatch(patch, /\brequire\.resolve\(/);
 assert.match(readme, /NPM Registry/i);
 assert.match(readme, /GitHub Repository/i);
 assert.match(readme, /Local Directory/i);
@@ -49,8 +49,8 @@ for (const name of requiredSkills) {
   const file = resolve(skillsRoot, name, "SKILL.md");
   assert.ok(file.startsWith(skillsRoot + sep));
   const content = await readFile(file, "utf8");
-  assert.match(content, /^---\\nname: [^\\n]+\\ndescription: [\\s\\S]*?\\n---\\n/);
-  assert.ok(content.trim().length > 120, `${name} instructions too short`);
+  assert.match(content, /^---\nname: [^\n]+\ndescription: [\s\S]*?\n---\n/);
+  assert.ok(content.trim().length > 120, name + " instructions too short");
 }
 assert.match(readme, /CLI helper/i);
 assert.match(readme, /context budgeting/i);
