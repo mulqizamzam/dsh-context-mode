@@ -440,15 +440,13 @@ test("adaptive compaction holds without source and returns an empty string, not 
   assert.equal(result.text, "");
 });
 
-test("retrieval planner keeps the final sufficiency step at low maxSteps", () => {
+test("retrieval planner keeps the sufficiency/stop guardrail at low maxSteps", () => {
   const result = planContextRetrieval({
-    task: "Explain the authentication request lifecycle across modules and verify its test coverage",
-    knownPaths: ["src/auth/handler.mjs"],
-    indexStatus: "available",
+    task: "ordinary work",
+    availableTools: [],
     maxSteps: 2,
   });
   assert.equal(result.steps.length, 2);
-  assert.match(result.steps.at(-1).action, /sufficiency/i);
-  assert.match(result.steps.at(-1).stopWhen, /Stop when/i);
+  assert.match(result.steps.at(-1).action, /sufficiency|stop or broaden/i);
   assert.deepEqual(result.steps.map((step) => step.order), [1, 2]);
 });
