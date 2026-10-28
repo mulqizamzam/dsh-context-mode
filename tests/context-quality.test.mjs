@@ -430,3 +430,23 @@ test("compaction handles large logs with linear stats bookkeeping and retains cr
   assert.ok(result.stats.compactChars < result.stats.sourceChars);
   assert.match(result.text, /ERROR: critical worker failure at src\/worker\.mjs:6001/);
 });
+
+
+
+test("adaptive compaction holds without source and returns an empty string, not undefined", () => {
+  const result = adaptiveCompactText({ task: "No source supplied" });
+  assert.equal(result.status, "held-no-source");
+  assert.equal(typeof result.text, "string");
+  assert.equal(result.text, "");
+});
+
+test("retrieval planner keeps the sufficiency/stop guardrail at low maxSteps", () => {
+  const result = planContextRetrieval({
+    task: "ordinary work",
+    availableTools: [],
+    maxSteps: 2,
+  });
+  assert.equal(result.steps.length, 2);
+  assert.match(result.steps.at(-1).action, /sufficiency|stop or broaden/i);
+  assert.deepEqual(result.steps.map((step) => step.order), [1, 2]);
+});
