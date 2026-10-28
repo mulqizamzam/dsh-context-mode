@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1 — audit fixes & configurable runtime
+
+- Fix `adaptiveCompactText()` to return an empty string (not `undefined`) for `held-no-source`.
+- Preserve the final sufficiency/stop step in `planContextRetrieval()` when `maxSteps` caps the plan.
+- Remove the dangling `icon.svg` reference from package metadata.
+- Backfill CHANGELOG entries for 0.3.0 and 0.4.0.
+- Derive version assertions from `package.json` in `verify.mjs` and `port-smoke.test.mjs`.
+- Allow `CONTEXT_MODE_CWD` to override the MCP working directory; fall back to `process.cwd()`.
+
 ## 0.4.0 — retrieval planning
 
 - Add `planContextRetrieval()` helper and CLI mode `plan` with task classification, search terms, ordered actions, tool-availability filtering, index-status awareness, and stop conditions.
