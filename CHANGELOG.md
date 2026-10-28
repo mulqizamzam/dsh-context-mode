@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0 — retrieval planning
+
+- Add `planContextRetrieval()` helper and CLI mode `plan` with task classification, search terms, ordered actions, tool-availability filtering, index-status awareness, and stop conditions.
+- Filter suggested tool candidates to `availableTools` when supplied; mark runtime verification as required otherwise.
+- Add the `dsh-ctx-plan` Skill and `docs/context-retrieval-planner.md`.
+- Fail-closed guardrail: preserve the final sufficiency/stop step when the step count is capped by `maxSteps`.
+
+## 0.3.0 — adaptive context budget
+
+- Add `recommendContextBudget()` and `adaptiveCompactText()` with tier-based compaction, post-compaction quality audit, targeted source recovery, and full-source fallback.
+- Add CLI modes `budget` and `adaptive-compact`.
+- Add the `dsh-ctx-budget` Skill and `docs/adaptive-context-budget.md`.
+- Fail closed on `insufficient-source`, `insufficient-checks`, and `required-facts-not-in-source`.
+- Held/fallback statuses always return the supplied source text (never `undefined`) and are reported explicitly rather than as a quality pass.
+
 ## 0.2.0 — quality-first context savings
 
 - Add a deterministic full-context vs compact-context evidence-retention benchmark with positive and negative-control fixtures, quality-gated savings, and recovery assessment.
