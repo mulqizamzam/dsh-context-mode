@@ -67,6 +67,20 @@ test("recovery returns source-grounded excerpts around missing facts", () => {
   assert.match(result.excerpts[0].text, /3: route \/api\/v1 failed/);
 });
 
+test("recovery locates a required fact that spans adjacent source lines", () => {
+  const source = ["alpha", "beta", "gamma delta", "epsilon zeta", "omega"].join("\n");
+  const compact = "alpha\nomega";
+  const result = recoverContext({ source, compact, requiredFacts: ["delta epsilon"], contextLines: 0 });
+  assert.deepEqual(result.recoveredFacts, ["delta epsilon"]);
+  assert.deepEqual(result.unresolvedFacts, []);
+  assert.equal(result.requiresFullSourceFallback, false);
+  assert.equal(result.excerpts.length, 1);
+  assert.equal(result.excerpts[0].startLine, 3);
+  assert.equal(result.excerpts[0].endLine, 4);
+  assert.match(result.excerpts[0].text, /3: gamma delta/);
+  assert.match(result.excerpts[0].text, /4: epsilon zeta/);
+});
+
 test("recovery flags facts that cannot be found in the supplied source", () => {
   const result = recoverContext({ source: "old config has no matching key", compact: "short", requiredFacts: ["newSecretSetting"] });
   assert.deepEqual(result.unresolvedFacts, ["newSecretSetting"]);
