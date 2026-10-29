@@ -450,3 +450,24 @@ test("retrieval planner keeps the sufficiency/stop guardrail at low maxSteps", (
   assert.match(result.steps.at(-1).action, /sufficiency|stop or broaden/i);
   assert.deepEqual(result.steps.map((step) => step.order), [1, 2]);
 });
+
+test("retrieval planner rejects maxSteps below three when knownPaths are supplied", () => {
+  assert.throws(
+    () => planContextRetrieval({ task: "debug", knownPaths: ["src/a.mjs"], maxSteps: 2 }),
+    /maxSteps must be >= 3 when knownPaths is supplied/,
+  );
+});
+
+test("retrieval planner preserves named paths when maxSteps is three", () => {
+  const result = planContextRetrieval({
+    task: "ordinary work",
+    knownPaths: ["src/a.mjs"],
+    availableTools: [],
+    maxSteps: 3,
+  });
+  assert.equal(result.steps.length, 3);
+  assert.match(result.steps[0].action, /reuse current context/i);
+  assert.match(result.steps[1].action, /named paths/i);
+  assert.match(result.steps[2].action, /evidence sufficiency/i);
+});
+
