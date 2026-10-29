@@ -30,7 +30,9 @@ The `planContextRetrieval(input)` helper and CLI mode `plan` return a plan-only 
 | `knownPaths` | Paths already known to be relevant |
 | `availableTools` | Exact runtime tool names; omit only when availability is unknown |
 | `indexStatus` | `unknown` (default), `available`, or `empty` |
-| `maxSteps` | Output step count from 2 through 6 (default 4) |
+| `maxSteps` | Output step count from 2 through 6 (default 4); requires at least 3 when `knownPaths` is non-empty |
+
+When `knownPaths` contains one or more paths, `maxSteps` must be at least 3 so the named-paths inspection step is not silently truncated; the planner throws an actionable `RangeError` for a conflicting value. Without `knownPaths`, `maxSteps: 2` remains valid and preserves the reuse and sufficiency steps.
 
 The response includes task classification, search terms, ordered actions, candidate tools, expected evidence, stop conditions, and guardrails. When an exact tool list is provided, candidates are filtered to that list; when omitted, suggested names are explicitly marked for runtime verification.
 
