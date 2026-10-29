@@ -1,0 +1,8 @@
+# Normalize line endings to LF in the repository and on checkout.
+# This prevents working-tree CRLF churn on Windows checkouts where
+# core.autocrlf is unset. CI and production both run LF.
+* text=auto eol=lf
+
+# Windows batch scripts require CRLF to execute; keep them as-is.
+*.bat text eol=crlf
+*.cmd text eol=crlf
