@@ -51,6 +51,7 @@ Setelah instalasi, restart profil DSH agar bundle termuat.
 - **Context Mode tools:** indexing, search, execution, dan statistik melalui runtime Context Mode.
 - **Skills:** workflow untuk diagnosis, index/search, compaction, context budget, retrieval planning, quality audit, recovery, dan upgrade.
 - **CLI helper:** mode `plan`, `budget`, `compact`, `adaptive-compact`, `quality`, dan `recover`.
+- **Auto-trigger service:** menjalankan skrip hook upstream context-mode otomatis di seam lifecycle DSH — tanpa trigger manual (detail di bagian [Auto-trigger](#auto-trigger-native-service)).
 
 Helper memproses input yang diberikan; helper tidak otomatis membaca file atau mengambil data dari indeks. Retrieval planner hanya membuat rencana dan tidak menjalankan pencarian.
 
@@ -71,6 +72,34 @@ printf '%s' '{"source":"ERROR: permission denied","compact":"ERROR: permission d
 
 Untuk mode `quality`, exit code membedakan hasil audit: `0` = pass, `1` = fail, `2` = error input/usage, dan `3` = insufficient checks. Status `pass` hanya berarti bukti literal yang diperiksa tetap ada; status itu bukan jaminan kebenaran semantik. Mode `adaptive-compact` dapat mengembalikan status hold/fallback secara sukses sambil mempertahankan sumber asli—selalu periksa field `status`, jangan hanya exit code.
 
+## Auto-trigger (native service)
+
+Sejak `0.5.0`, bundle memuat entry cordis ketiga: `dsh-context-mode-auto` (`lib/auto-trigger.mjs`). Entry ini menjalankan skrip hook upstream context-mode — yang sama dengan platform lain yang didukung Context Mode — di seam lifecycle DSH, sehingga routing Context Mode berjalan **otomatis tanpa trigger**:
+
+| Seam DSH | Hook upstream | Efek |
+|---|---|---|
+| `agent/created` | `hooks/sessionstart.mjs` | auto-inject routing block + snapshot resume saat session startup/resume/clear/compact |
+| `tools/pre-execute` | `hooks/pretooluse.mjs` | nudge tool big-output agar memakai `ctx_*` (threshold ukuran + allowlist decided upstream) |
+| `tools/post-execute` | `hooks/posttooluse.mjs` | capture session event (kontinuitas sesi) |
+| `agent/turn-stopping` | `hooks/stop.mjs` | capture akhir turn / paksa kelanjutan |
+
+Sifat: fail-open (error/timeout/spawn hook tidak pernah memblokir tool atau mem-crash host), nol dependensi runtime, dan session DB hook disimpan di `$DSH_HOME/context-mode-hooks` (bukan `~/.claude`). Gate pre/post hanya memicu untuk tool yang cocok dengan `toolMatcher` default: `bash`, `read`, `grep`, `glob`, `web_fetch`, `webSearch`, `read_page`, `platform_search`, `advanced_search`, `browser_*`, dan `mcp__context_mode__*`.
+
+Config row (semua opsional, default aman):
+
+```yaml
+    - id: dsh-context-mode-auto
+      name: 'dsh-context-mode/auto-trigger'
+      config:
+        enabled: true   # false = matikan seluruh auto-trigger
+        # events: { sessionStart: false }  # toggle per-event; kunci tak disebut default true
+        # toolMatcher: '^(bash|read|...)$|^mcp__context_mode__'
+        # timeoutMs: 15000
+        # configDir: /path/ke/dir
+```
+
+Catatan: event `PreCompact` tidak didukung bridge DSH; gate kompaksi dipegang oleh plugin `mulqi-context-compression`.
+
 ## Verifikasi
 
 Periksa bundle yang terpasang:
@@ -79,6 +108,8 @@ Periksa bundle yang terpasang:
 dsh plugin --profile web why dsh-context-mode
 dsh --profile web --dump-config
 ```
+
+Baris mount yang sehat: `dsh-context-mode-mcp`, `dsh-context-mode-skills`, dan `dsh-context-mode-auto` (tanpa baris "skipping profile bundle").
 
 Di sesi DSH, jalankan `ctx_doctor` untuk memeriksa kesehatan runtime. Pastikan tool dan Skills yang dibutuhkan benar-benar tersedia; koneksi MCP saja tidak membuktikan semua fitur bekerja.
 

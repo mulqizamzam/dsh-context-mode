@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0 — Native auto-trigger service
+
+- Add the `dsh-context-mode-auto` cordis entry (`lib/auto-trigger.mjs`, package subpath `./auto-trigger`): runs the upstream context-mode hook scripts — the same Claude-dialect entries the other supported platforms use — on DSH's native lifecycle seams, with no Claude Code hook bridge and no hooks.json config file:
+  - `agent/created` → `hooks/sessionstart.mjs` (routing block + resume snapshot injected on startup/resume/clear/compact)
+  - `tools/pre-execute` → `hooks/pretooluse.mjs` (big-output tools nudged onto the `ctx_*` tools)
+  - `tools/post-execute` → `hooks/posttooluse.mjs` (session event capture)
+  - `agent/turn-stopping` → `hooks/stop.mjs` (turn-end capture / forced continuation)
+- Fail-open everywhere: hook errors, timeouts, and spawn failures never block, replace, or crash the calling turn; the `agent/created` listener swallows all errors (a throwing listener vetoes agent creation in the host).
+- Mount-row config surface: `enabled` kill switch, per-event toggles (`events`), `toolMatcher` regex, `timeoutMs`, `configDir` (CLAUDE_CONFIG_DIR; default `$DSH_HOME/context-mode-hooks`), `contextModeRoot` override.
+- Zero runtime dependencies; `@deepseek-ai/dsh-llm`'s `createUserMessage` is used opportunistically when resolvable, with a plain-object fallback.
+- PreCompact is out of scope: no DSH bridge seam; the compaction gate is owned by the mulqi-context-compression plugin.
+- Add `tests/auto-trigger.test.mjs` (stub hook fixtures; no host, no node_modules required).
+
 ## 0.4.1 — audit fixes & configurable runtime
 
 - Fix `adaptiveCompactText()` to return an empty string (not `undefined`) for `held-no-source`.

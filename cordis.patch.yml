@@ -1,4 +1,5 @@
-# DeepSeek Harness bundle for the upstream Context Mode MCP runtime and DSH Skills.
+# DeepSeek Harness bundle for the upstream Context Mode MCP runtime, DSH
+# Skills, and the native auto-trigger service.
 - insert:
     - id: dsh-context-mode-mcp
       name: '@deepseek-ai/dsh-mcp-client'
@@ -23,3 +24,13 @@
         customSkillDirs:
           - !!js "process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('dsh-context-mode/package.json')), 'skills')"
         watch: true
+
+    - id: dsh-context-mode-auto
+      name: 'dsh-context-mode/auto-trigger'
+      # Native auto-trigger: runs the upstream context-mode hook scripts on
+      # DSH lifecycle seams (SessionStart / PreToolUse / PostToolUse / Stop)
+      # without a Claude Code hook bridge. Kill switch and overrides:
+      # enabled, events, toolMatcher, timeoutMs, configDir, contextModeRoot
+      # (see lib/auto-trigger.mjs module docs).
+      config:
+        enabled: true

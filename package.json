@@ -1,6 +1,6 @@
 {
   "name": "dsh-context-mode",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Context retrieval planning, adaptive context budgeting, and quality-first context engineering for DeepSeek Harness.",
   "type": "module",
   "main": "./index.mjs",
@@ -8,13 +8,15 @@
     ".": "./index.mjs",
     "./package.json": "./package.json",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./quality": "./lib/context-quality.mjs"
+    "./quality": "./lib/context-quality.mjs",
+    "./auto-trigger": "./lib/auto-trigger.mjs"
   },
   "files": [
     "index.mjs",
     "cordis.patch.yml",
     "skills/",
     "lib/context-quality.mjs",
+    "lib/auto-trigger.mjs",
     "scripts/context-quality.mjs",
     "scripts/context-performance.mjs",
     "docs/",
@@ -36,10 +38,12 @@
     "context-mode": "1.0.169"
   },
   "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
     "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.2",
     "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2"
   },
   "devDependencies": {
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
     "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.2",
     "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2"
   },
