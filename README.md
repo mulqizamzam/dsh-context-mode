@@ -44,6 +44,8 @@ dsh --profile web
 
 Metode ini memasang checkout lokal untuk pengembangan. Jangan pindahkan atau hapus folder repository setelah dipasang.
 
+Sebelum memasang dengan metode ini, jalankan `pnpm install` di folder repository. Profil link tidak meng-install dependensi milik paket yang di-link, sehingga `context-mode` (dan peers `@deepseek-ai/*`) harus tersedia dari `node_modules` repository itu sendiri; tanpa itu entry MCP gagal resolve `context-mode/cli` dan auto-trigger service otomatis nonaktif (fail-open, dengan warning di log boot).
+
 Setelah instalasi, restart profil DSH agar bundle termuat.
 
 ## Fitur
