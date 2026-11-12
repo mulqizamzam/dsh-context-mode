@@ -371,3 +371,101 @@ test('parse: malformed stdout stays plain text, no decision', () => {
   assert.equal(out.decision, undefined)
   assert.equal(out.stdout, 'not json')
 })
+
+test('session-start: CC-dialect tool names are rewritten to the DSH prefix by default', async () => {
+  const root = fixtureRoot({
+    'sessionstart.mjs': stubFor('SessionStart',
+      `process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: 'call mcp__plugin_context-mode_context-mode__ctx_search now' } }))
+       process.exit(0)`),
+  })
+  const ctx = makeCtx()
+  const agent = fakeAgent()
+  const dispose = apply(ctx, { contextModeRoot: root, configDir: markerDir() })
+  try {
+    await fire(ctx, 'agent/created', { agent, source: 'startup' })
+    assert.equal(agent.injected.length, 1)
+    assert.equal(agent.injected[0].content[0].text, 'call mcp__context_mode__ctx_search now')
+  } finally {
+    dispose()
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('tool-name rewrite: disabled verbatim, or pointed at a custom mount prefix', async () => {
+  const cc = 'mcp__plugin_context-mode_context-mode__ctx_search'
+  const emit = `process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: ${JSON.stringify(cc)} } }))\nprocess.exit(0)`
+  {
+    const root = fixtureRoot({ 'sessionstart.mjs': stubFor('SessionStart', emit) })
+    const ctx = makeCtx()
+    const agent = fakeAgent()
+    const dispose = apply(ctx, { contextModeRoot: root, configDir: markerDir(), toolNameRewrite: false })
+    try {
+      await fire(ctx, 'agent/created', { agent })
+      assert.equal(agent.injected[0].content[0].text, cc)
+    } finally {
+      dispose()
+      rmSync(root, { recursive: true, force: true })
+    }
+  }
+  {
+    const root = fixtureRoot({ 'sessionstart.mjs': stubFor('SessionStart', emit) })
+    const ctx = makeCtx()
+    const agent = fakeAgent()
+    const dispose = apply(ctx, { contextModeRoot: root, configDir: markerDir(), dshToolPrefix: 'mcp__cm__' })
+    try {
+      await fire(ctx, 'agent/created', { agent })
+      assert.equal(agent.injected[0].content[0].text, 'mcp__cm__ctx_search')
+    } finally {
+      dispose()
+      rmSync(root, { recursive: true, force: true })
+    }
+  }
+})
+
+test('stop: a repeated block steers one agent at most once', async () => {
+  const root = fixtureRoot({
+    'stop.mjs': stubFor('Stop',
+      `process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'Stop', permissionDecision: 'deny', permissionDecisionReason: 'pending capture' } }))
+       process.exit(0)`),
+  })
+  const ctx = makeCtx()
+  const agent = fakeAgent()
+  const dispose = apply(ctx, { contextModeRoot: root, configDir: markerDir() })
+  try {
+    await fire(ctx, 'agent/turn-stopping', { agent, turn: 1 })
+    await fire(ctx, 'agent/turn-stopping', { agent, turn: 2 })
+    await fire(ctx, 'agent/turn-stopping', { agent, turn: 3 })
+    assert.equal(agent.steered.length, 1, 'only the first block may force continuation')
+  } finally {
+    dispose()
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test('hook spawn env carries CONTEXT_MODE_PLATFORM=dsh', async () => {
+  const root = fixtureRoot({
+    'pretooluse.mjs': stubFor('PreToolUse',
+      `process.stdout.write('{}')
+       wf(j(dir, 'env.json'), JSON.stringify({ platform: process.env.CONTEXT_MODE_PLATFORM }))
+       process.exit(0)`),
+  })
+  const markers = markerDir()
+  process.env.CM_MARKER_DIR = markers
+  process.env.CM_MARKER_NAME = 'pre'
+  const ctx = makeCtx()
+  const agent = fakeAgent()
+  const dispose = apply(ctx, { contextModeRoot: root, configDir: markers })
+  try {
+    const decision = await fire(ctx, 'tools/pre-execute',
+      { name: 'bash', arguments: {}, callId: 'c8', agent }, async () => ({ kind: 'allow' }))
+    assert.equal(decision.kind, 'allow')
+    const env = JSON.parse(readFileSync(join(markers, 'env.json'), 'utf8'))
+    assert.equal(env.platform, 'dsh')
+  } finally {
+    dispose()
+    delete process.env.CM_MARKER_DIR
+    delete process.env.CM_MARKER_NAME
+    rmSync(root, { recursive: true, force: true })
+    rmSync(markers, { recursive: true, force: true })
+  }
+})

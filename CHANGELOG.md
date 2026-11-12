@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 — auto-trigger DSH naming & turn-safety
+
+- Fix: the upstream hook platform table has no "dsh" entry, and the hook spawn env sets `CLAUDE_PROJECT_DIR`, so upstream detects `claude-code` and the session-start routing block tells the model to call Claude-dialect tools (`mcp__plugin_context-mode_context-mode__ctx_*`) that do not exist in DSH. Injected `additionalContext` now rewrites that prefix to the DSH MCP tool prefix `mcp__context_mode__` (configurable via `dshToolPrefix`, disable via `toolNameRewrite: false`).
+- Fix: a `stop`-hook block could force continuation on every `agent/turn-stopping` dispatch; a stop block now steers an agent at most once (WeakMap cap), so a block-heavy hook cannot loop a turn.
+- Hook spawn env now carries `CONTEXT_MODE_PLATFORM=dsh` (upstream already reads it on the MCP-server side; this bridges hook-side platform detection for when the upstream table adds dsh).
+- Add 4 regression tests (rewrite default/escape/custom prefix, stop-steer cap, spawn env); suite 75/75.
+
 ## 0.5.0 — Native auto-trigger service
 
 - Add the `dsh-context-mode-auto` cordis entry (`lib/auto-trigger.mjs`, package subpath `./auto-trigger`): runs the upstream context-mode hook scripts — the same Claude-dialect entries the other supported platforms use — on DSH's native lifecycle seams, with no Claude Code hook bridge and no hooks.json config file:
